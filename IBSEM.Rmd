@@ -151,61 +151,75 @@ ggplot() + geom_point(data=mnmean, aes(month, mntemp)) + theme_bw()
 ### analyse 50-year salmon data to get parameters
 ### read in table
 ```{r}
+## only some of the data
 ian <- read.table("C:/Users/keyserf/Documents/Data/All Biochar NET and RR Oct 2013.txt", header=TRUE)
 names(ian)
 
 ian[,1:20] <- apply(ian[,1:20], 2, function(x) as.numeric(as.character(x)))
 
+
+## all the data
 salmon <- read.csv("C:/Users/keyserf/Documents/Data/All Biochar Oct 2013.csv", header=TRUE)
 names(salmon)
 
 str(salmon)
 unique(salmon$SEX)
 
+## correct the year column
 salmon$year.adj <- as.numeric(ifelse(salmon$YEAR < 10, paste0(200, salmon$YEAR), ifelse(salmon$YEAR %in% c(10,11,12), paste0(20, salmon$YEAR), salmon$YEAR)))
 
 salmon[,5:28] <- apply(salmon[,5:28], 2, function(x) as.numeric(as.character(x)))
 
-ggplot() + geom_histogram(data=salmon, aes(RA), binwidth=1, colour="black", fill="white") + scale_x_continuous(breaks=seq(0, 13,1)) + theme_bw() 
-unique(salmon$POND)
-
-## can I replicate Ian's plots?
-ra2 <- subset(ian, TA==2 & MO <6)
-ra3 <- subset(ian, TA==3 & MO <6)
-ra4 <- subset(ian, TA==4 & MO <6)
-ra5 <- subset(ian, TA==5 & MO <6)
-
-ra2 <- ddply(.data=ra2, .(YEAR),
-             summarize,
-             mfl = mean(FL))
-ra3 <- ddply(.data=ra3, .(YEAR),
-             summarize,
-             mfl = mean(FL))
-ra4 <- ddply(.data=ra4, .(YEAR),
-             summarize,
-             mfl = mean(FL))
-ra5 <- ddply(.data=ra5, .(YEAR),
-             summarize,
-             mfl = mean(FL))
-
-ra2
-
-ggplot() + geom_point(data=ra2, aes(YEAR, FL)) + theme_bw()
-ggplot() + geom_point(data=ra3, aes(YEAR, FL)) + theme_bw()
-ggplot() + geom_point(data=ra4, aes(YEAR, FL)) + theme_bw()
-ggplot() + geom_point(data=ra5, aes(YEAR, FL, colour=as.factor(MO))) + theme_bw()
-mean(ian$FL, na.rm=T)
-
-smolts <- subset(ian, RA %in% c(2,3,4,5))
-
-range(smolts$FL, na.rm=TRUE)
-
-smolts$test <- (smolts$FL - 273.8378)/178.5569
-mean(smolts$FL, na.rm=T) # 273.8378
-
-ggplot () + geom_point(data=smolts[smolts$MO < 6,], aes(YEAR, test)) + theme_bw() + facet_wrap(~RA)
+## look at sampling timing
+ggplot() + geom_histogram(data=salmon, aes(MO), colour="black", fill="white") + scale_x_continuous(breaks=seq(0, 13,1)) + theme_bw() 
 
 
+## format dates
+salmon$DATE <- ymd(paste0(salmon$year.adj,"-", salmon$MO,"-", salmon$DY))
+salmon$dayssince <- salmon$DATE - ymd("1954-01-01")
+salmon$doy <- salmon$DATE - ymd(paste0(salmon$year.adj, "-", 1, "-", 1))
+
+ggplot() + geom_histogram(data=salmon[salmon$RA>1,], aes(MO, fill=as.factor(RA)), binwidth=1, colour="black", position=position_dodge()) + scale_x_continuous(breaks=seq(0, 12,1)) + theme_bw() 
+
+### spring parr = 1
+### spring smolts = 2
+### 1 summer smolts = 3
+
+# RA = river age?
+# SA = sea age?
+
+### need to separate by season due to summer growth
+salmon$season <- ifelse(salmon$MO %in% c(4,5,6), "spring", ifelse(salmon$MO %in% c(7,8), "summer", ifelse(salmon$MO %in% c(9,10,11), "fall", NA)))
+
+### only look at fish caught as smolts
+smolts <- subset(salmon, RA %in% c(2,3,4,5) & is.na(SA)==TRUE)
+
+smolts$season <- factor(smolts$season, levels=c("spring", "summer", "fall"))
+
+### plot smolt lengths against year and by nyears in river 
+ggplot() + 
+  geom_point(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, FL)) + 
+  facet_grid(RA~.) +
+  theme_bw() +
+  geom_smooth(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, FL), method="lm") + 
+  ylab("Fork length (mm)") 
+
+model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring"),], FL~year.adj)
+summary(model1)
+
+model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring"),], FL~year.adj)
+summary(model2)
+
+model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring"),], FL~year.adj)
+summary(model3)
+
+model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring"),], FL~year.adj)
+summary(model4)
+
+
+##############################
+
+## Calculating natural mortality
 agestr <- ddply(.data=ian[ian$SEX %in% c(1,2),], .(RA, SEX),
                 summarize,
                 total = length(FL))
@@ -222,6 +236,12 @@ summary(model1)
 model2 <- lm(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2 & agestr$SEX==2,], log(total)~RA) 
 summary(model2)
 
+table(ian$LS)
+#smolting probability = LS 3 / LS 2
+966/5129 
+# = 0.1883
+
+#maturation probability = number of mature 
 
 
 
