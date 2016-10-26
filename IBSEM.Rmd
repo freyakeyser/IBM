@@ -1,0 +1,228 @@
+# Read in packages
+```{r}
+require(ggplot2)
+require(plyr)
+require(lubridate)
+require(dplyr)
+require(sp)
+require(maptools)
+require(ggmap)
+require(ggplot2)
+require(reshape2)
+require(rgdal)
+require(raster)
+require(rgeos)
+require(PBSmapping)
+require(gdistance)
+require(grid)
+require(gridExtra)
+```
+
+### plotting Norway data
+```{r}
+adult <- read.table("./results_scen1wild1/adult.txt", header=TRUE)
+herit.FW <- read.table("./results_scen1wild1/heritabilityFreshwater.txt", header=TRUE)
+herit.S <- read.table("./results_scen1wild1/heritabilitySea.txt", header=TRUE)
+smolts <- read.table("./results_scen1wild1/smolts.txt", header=TRUE)
+embryo <- read.table("./results_scen1wild1/embryo.txt", header=TRUE)
+parr0 <- read.table("./results_scen1wild1/parr0.txt", header=TRUE)
+parr1 <- read.table("./results_scen1wild1/parr1.txt", header=TRUE)
+parr2 <- read.table("./results_scen1wild1/parr2.txt", header=TRUE)
+spawners <- read.table("./results_scen1wild1/spawners.txt", fill=TRUE, colClasses = "character")
+colnames(spawners) <- spawners[1,]
+spawners <- spawners[2:399,]
+
+##fry <- read.table("./results_scen1wild1/fry.txt", header=TRUE)
+
+juv <- rbind(parr0, parr1, parr2)
+juv$YC <- c(0,0,1,1,2,2)
+
+# Can I replicate Figure 2 in the IBSEM paper?
+
+plot1 <- plot(1, embryo$density)
+plot2 <- plot(juv$YC, juv$density)
+
+
+head(adult)
+
+p0 <- ggplot() + geom_line(data=adult[1:250,], aes(month, sw0), colour="red") +
+  geom_point(data=adult[1:250,], aes(month, sw0), colour="red") +
+  theme_bw()
+p1 <- ggplot() + geom_line(data=adult[1:250,], aes(month, sw1), colour="orange") +
+  geom_point(data=adult[1:250,], aes(month, sw1), colour="orange") +
+  theme_bw()
+p2 <- ggplot() + geom_line(data=adult[1:250,], aes(month, sw2), colour="green") +
+  geom_point(data=adult[1:250,], aes(month, sw2), colour="green") +
+  theme_bw()
+p3 <- ggplot() + geom_line(data=adult[1:250,], aes(month, sw3), colour="blue") +
+  geom_point(data=adult[1:250,], aes(month, sw3), colour="blue") +  
+  theme_bw()
+
+grid.arrange(p0,p1,p2,p3, nrow=4)
+
+ggplot() + geom_line(data=adult[1:250,], aes(month, total)) +
+  geom_point(data=adult[1:250,], aes(month, total)) +
+  theme_bw()
+
+adult$month.adj <- adult$month%%12
+
+ggplot() + 
+  geom_boxplot(data=adult, aes(month.adj, popSize, group=month.adj)) +
+  theme_bw()
+
+sept <- subset(adult, month.adj == 9)
+mean(sept$sw0)
+mean(sept$sw1)
+mean(sept$sw2)
+mean(sept$sw3)
+sd(sept$sw0)
+sd(sept$sw1)
+sd(sept$sw2)
+sd(sept$sw3)
+
+
+spawners$month.adj <- as.numeric(spawners$month)%%12
+octob <- subset(spawners, month.adj==9)
+colnames(octob)[9:12] <- c("sw0", "sw1", "sw2", "sw3")
+mean(as.numeric(octob$sw3))
+
+variables <- data.frame(vars = c(colnames(adult), colnames(smolts), colnames(parr0), colnames(parr1), colnames(parr2), colnames(spawners), colnames(embryo), colnames(herit.FW), colnames(herit.S)))
+
+
+pAdult <- read.table("C:/Users/keyserf/Desktop/salmonIBM/Install/src/runFiles/parameters/adultParameters.txt")
+```
+
+
+### read in environmental data
+```{r}
+require(raster)
+require(ncdf4)
+
+temps <- nc_open("C:/Users/keyserf/Downloads/sst.mnmean.v3.nc")
+temps <- raster(temps)
+lon <- ncvar_get(temps, "lon")
+nlon <- dim(lon)
+lat <- ncvar_get(temps, "lat")
+nlat <- dim(lat)
+time <- ncvar_get(temps, "time")
+ntime <- dim(time)
+meas <- ncvar_get(temps, "sst")
+
+m <- 1
+tmp.slice <- meas[, , m]
+
+plot(raster(tmp.slice))
+
+print(temps)
+
+df <- expand.grid(lon, lat, time)
+meas.vec <- as.vector(meas)
+df <- data.frame(cbind(df, meas.vec))
+names(df) <- c("lon", "lat", "dayssince", "temp")
+
+test <- ddply(.data=df, .(lon, lat),
+              summarize,
+              mnmean=mean(temp, na.rm=TRUE))
+
+ggplot() + geom_point(data=test, aes(lon, lat, colour=mnmean)) +
+  geom_rect(data=test, aes(xmin=290, xmax=310, ymin=45, ymax=60), fill=NA, colour="white")
+
+df_atl <- subset(df, lon >290 & lon <310 & lat>45 & lat < 55 & is.na(temp)==FALSE)
+
+head(df_atl)
+df_atl$date <- ymd("1800-01-01") + days(df_atl$dayssince)
+df_atl$month <- month(df_atl$date)
+df_atl$year <- year(df_atl$date)
+df_atl <- subset(df_atl, year > 1985)
+
+mnmean <- ddply(.data=df_atl, .(month),
+                summarize,
+                mntemp = mean(temp))
+
+ggplot() + geom_point(data=mnmean, aes(month, mntemp)) + theme_bw()
+
+### mnmean contains monthly 30-year averaged sea temperatures.
+
+### next steps: need river temperature data
+```
+
+
+
+### analyse 50-year salmon data to get parameters
+### read in table
+```{r}
+ian <- read.table("C:/Users/keyserf/Documents/Data/All Biochar NET and RR Oct 2013.txt", header=TRUE)
+names(ian)
+
+ian[,1:20] <- apply(ian[,1:20], 2, function(x) as.numeric(as.character(x)))
+
+salmon <- read.csv("C:/Users/keyserf/Documents/Data/All Biochar Oct 2013.csv", header=TRUE)
+names(salmon)
+
+str(salmon)
+unique(salmon$SEX)
+
+salmon$year.adj <- as.numeric(ifelse(salmon$YEAR < 10, paste0(200, salmon$YEAR), ifelse(salmon$YEAR %in% c(10,11,12), paste0(20, salmon$YEAR), salmon$YEAR)))
+
+salmon[,5:28] <- apply(salmon[,5:28], 2, function(x) as.numeric(as.character(x)))
+
+ggplot() + geom_histogram(data=salmon, aes(RA), binwidth=1, colour="black", fill="white") + scale_x_continuous(breaks=seq(0, 13,1)) + theme_bw() 
+unique(salmon$POND)
+
+## can I replicate Ian's plots?
+ra2 <- subset(ian, TA==2 & MO <6)
+ra3 <- subset(ian, TA==3 & MO <6)
+ra4 <- subset(ian, TA==4 & MO <6)
+ra5 <- subset(ian, TA==5 & MO <6)
+
+ra2 <- ddply(.data=ra2, .(YEAR),
+             summarize,
+             mfl = mean(FL))
+ra3 <- ddply(.data=ra3, .(YEAR),
+             summarize,
+             mfl = mean(FL))
+ra4 <- ddply(.data=ra4, .(YEAR),
+             summarize,
+             mfl = mean(FL))
+ra5 <- ddply(.data=ra5, .(YEAR),
+             summarize,
+             mfl = mean(FL))
+
+ra2
+
+ggplot() + geom_point(data=ra2, aes(YEAR, FL)) + theme_bw()
+ggplot() + geom_point(data=ra3, aes(YEAR, FL)) + theme_bw()
+ggplot() + geom_point(data=ra4, aes(YEAR, FL)) + theme_bw()
+ggplot() + geom_point(data=ra5, aes(YEAR, FL, colour=as.factor(MO))) + theme_bw()
+mean(ian$FL, na.rm=T)
+
+smolts <- subset(ian, RA %in% c(2,3,4,5))
+
+range(smolts$FL, na.rm=TRUE)
+
+smolts$test <- (smolts$FL - 273.8378)/178.5569
+mean(smolts$FL, na.rm=T) # 273.8378
+
+ggplot () + geom_point(data=smolts[smolts$MO < 6,], aes(YEAR, test)) + theme_bw() + facet_wrap(~RA)
+
+
+agestr <- ddply(.data=ian[ian$SEX %in% c(1,2),], .(RA, SEX),
+                summarize,
+                total = length(FL))
+
+ggplot() + geom_point(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2,], aes(RA, log(total))) + facet_wrap(~SEX) +
+  geom_smooth(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2,], aes(RA, log(total)), method="lm") +
+  theme_classic() + theme(panel.border=element_rect(colour="black", fill=NA))
+# total mortality for sex 1 = -1.8107 | for sex 2 = -2.1568
+# error for sex 1 = 0.4804 | for sex 2 = 0.4715
+
+
+model1 <- lm(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2 & agestr$SEX==1,], log(total)~RA) 
+summary(model1)
+model2 <- lm(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2 & agestr$SEX==2,], log(total)~RA) 
+summary(model2)
+
+
+
+
+```
