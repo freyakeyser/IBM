@@ -204,7 +204,7 @@ ggplot() +
   geom_smooth(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, FL), method="lm") + 
   ylab("Fork length (mm)") 
 
-model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring"),], FL~year.adj)
+model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring"),], FL~year.adj,na.action = na.exclude)
 summary(model1)
 
 model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring"),], FL~year.adj)
@@ -217,23 +217,90 @@ model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring"),], FL~yea
 summary(model4)
 
 
+mod1byyear <- cbind(resid(model1), smolts[which(smolts$RA==2 & smolts$season=="spring"),])
+
+View(mod1byyear[which(mod1byyear$year.adj == 1995), ])
+View(mod1byyear[which(mod1byyear$year.adj == 1968), ])
+
+colnames(mod1byyear)[1] <- "resid"
+
+aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean)
+
+plot(aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean))
+
+allsmolts <- subset(salmon, RA %in% c(2,3,4,5) & TA <10 & is.na(TA)==FALSE & season=="spring")
+
+grid1 <- ggplot() + 
+  geom_point(data=allsmolts[allsmolts$season=="spring" & is.na(allsmolts$season)==FALSE,], aes(year.adj, FL)) + 
+  facet_grid(RA~TA) +
+  theme_bw() +
+  geom_smooth(data=allsmolts[allsmolts$season=="spring" & is.na(allsmolts$season)==FALSE,], aes(year.adj, FL), method="lm") + 
+  ylab("Fork length (mm)") 
+
+
+models <- ddply(.data=allsmolts, .(RA, TA),
+                function(x)
+                coef(lm(data=x, FL ~ year.adj)))
+
+models_rsq <- ddply(.data=allsmolts, .(RA, TA),
+                function(x)
+                summary(lm(data=x, FL ~ year.adj))$r.squared)
+
+models_pval <- ddply(.data=allsmolts, .(RA, TA),
+                function(x)
+                anova(lm(data=x, FL ~ year.adj))$'Pr(>F)'[1])
+
+models <- join(models, models_rsq, type="left")
+models$year<- 2011
+models$FL <- 1250
+
+grid1 <- grid1 + geom_text(data=models, aes(year, FL, label=paste0("slope: ", round(year.adj,3), "\n", "Rsq: ", round(V1,3))), size=3, hjust=1) 
+grid1
+
+
+ggplot() + geom_point(data=allsmolts, aes(TA, FL)) + geom_smooth(data=allsmolts, aes(TA, FL), method="lm")
+lm1 <- lm(data=allsmolts, FL ~ TA)
+summary(lm1)
+# FL = -220.8338 + 131.2867*TA
+
+allsmolts$predsmoltlength <- -220.8338 + 131.2867*(allsmolts$RA)
+
+ggplot() + geom_point(data=allsmolts, aes(RA, predsmoltlength))
+
+models_year <- ddply(.data=allsmolts, .(year.adj),
+                function(x)
+                coef(lm(data=x, FL ~ TA)))
+names(models_year) <- c("year.adj", "Intercept", "Slope")
+
+allsmolts <- join(allsmolts, models_year, type="left")
+
+allsmolts$predsmoltlength <- allsmolts$Intercept + (allsmolts$Slope*allsmolts$RA)
+
+ggplot() + geom_point(data=allsmolts, aes(year.adj, predsmoltlength)) + 
+  facet_wrap(~RA) + 
+  geom_smooth(data=allsmolts, aes(year.adj, predsmoltlength), method="lm")
+
+
+
 ##############################
 
 ## Calculating natural mortality
-agestr <- ddply(.data=ian[ian$SEX %in% c(1,2),], .(RA, SEX),
+agestr <- ddply(.data=salmon[salmon$SEX %in% c(1,2),], .(TA, SEX),
                 summarize,
                 total = length(FL))
 
-ggplot() + geom_point(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2,], aes(RA, log(total))) + facet_wrap(~SEX) +
-  geom_smooth(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2,], aes(RA, log(total)), method="lm") +
+ggplot() + geom_point(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3,], aes(TA, log(total))) + facet_wrap(~SEX) +
+  geom_smooth(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3,], aes(TA, log(total)), method="lm") +
   theme_classic() + theme(panel.border=element_rect(colour="black", fill=NA))
-# total mortality for sex 1 = -1.8107 | for sex 2 = -2.1568
-# error for sex 1 = 0.4804 | for sex 2 = 0.4715
+# total mortality for sex 1 = -1.43792 | for sex 2 = -1.6628
+# error for sex 1 = 0.09739 | for sex 2 = 0.1194
+
+# exp(-1.43792) = 0.2374211 survival per year
 
 
-model1 <- lm(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2 & agestr$SEX==1,], log(total)~RA) 
+model1 <- lm(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3 & agestr$SEX==1,], log(total)~TA) 
 summary(model1)
-model2 <- lm(data=agestr[is.na(agestr$RA)==FALSE & agestr$RA >2 & agestr$SEX==2,], log(total)~RA) 
+model2 <- lm(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3 & agestr$SEX==2,], log(total)~TA) 
 summary(model2)
 
 table(ian$LS)
@@ -243,6 +310,45 @@ table(ian$LS)
 
 #maturation probability = number of mature 
 
+max(table(salmon$AREA))
+site <- table(salmon$AREA)
 
+site <- melt(site)
+site <- subset(site, value> 10000)
+
+unique(site$Var1)
+
+bigsites <- subset(salmon, AREA %in% c("70779", "361335", "490519"))
+ggplot() + geom_histogram(data=bigsites, aes(year.adj), binwidth=1, colour="black", fill=NA) + facet_wrap(~AREA) + theme_bw()
+
+ddply(.data= ddply(.data=bigsites, .(AREA, year.adj),
+      summarize,
+      total = length(FL)),
+      .(AREA),
+      summarize,
+      smallest = min(total),
+      largest = max(total))
+
+### let's only look at site area 490519 because it has somewhat consistent sampling effort
+
+bestsite <- subset(salmon, AREA == 490519)
+bestsiteTA <- ddply(.data=bestsite, .(TA),
+                    summarize,
+                    total=length(FL))
+
+ggplot() + geom_point(data=bestsiteTA[bestsiteTA$TA>3,], aes(TA, log(total))) + 
+  geom_smooth(data=bestsiteTA[bestsiteTA$TA>3,], aes(TA, log(total)), method="lm") + 
+  theme_bw()
 
 ```
+
+### try Piou and Prevost IBASAM package
+```{r}
+## see github page: https://github.com/Ibasam/IBASAM
+
+require(Ibasam)
+install.packages("Ibasam")
+update.packages(checkBuilt=TRUE, ask=FALSE)
+
+library(devtools)
+install("C:/Users/keyserf/Documents/Data/Ibasam/Compiled/Ibasam_2.1.0.zip")
