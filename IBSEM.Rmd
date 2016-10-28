@@ -188,45 +188,61 @@ ggplot() + geom_histogram(data=salmon[salmon$RA>1,], aes(MO, fill=as.factor(RA))
 # RA = river age?
 # SA = sea age?
 
+
 ### need to separate by season due to summer growth
 salmon$season <- ifelse(salmon$MO %in% c(4,5,6), "spring", ifelse(salmon$MO %in% c(7,8), "summer", ifelse(salmon$MO %in% c(9,10,11), "fall", NA)))
 
 ### only look at fish caught as smolts
 smolts <- subset(salmon, RA %in% c(2,3,4,5) & is.na(SA)==TRUE)
 
+### get rid of outliers
+ggplot() + geom_point(data=smolts, aes(FL, WW))
+smolts <- subset(smolts, is.na(FL)==FALSE & is.na(WW)==FALSE)
+smolts_clean <- subset(smolts, (FL<200 & WW < 5000) | (FL>200 & WW<40000) | FL==200)
+ggplot() + geom_point(data=smolts_clean, aes(FL, WW))
+
 smolts$season <- factor(smolts$season, levels=c("spring", "summer", "fall"))
 
+smolts$scaledFL <- base::scale(smolts$FL)
+
 ### plot smolt lengths against year and by nyears in river 
-ggplot() + 
-  geom_point(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, FL)) + 
+plot1 <- ggplot() + 
+  geom_point(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, scaledFL), size=0.5) + 
   facet_grid(RA~.) +
   theme_bw() +
-  geom_smooth(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, FL), method="lm") + 
-  ylab("Fork length (mm)") 
+  geom_smooth(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, scaledFL), method="lm") + 
+  ylab("Scaled fork length") +
+  xlab("Year")
 
-model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring"),], FL~year.adj,na.action = na.exclude)
+model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring"),], scaledFL~year.adj,na.action = na.exclude)
 summary(model1)
 
-model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring"),], FL~year.adj)
+model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring"),], scaledFL~year.adj)
 summary(model2)
 
-model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring"),], FL~year.adj)
+model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring"),], scaledFL~year.adj)
 summary(model3)
 
-model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring"),], FL~year.adj)
+model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring"),], scaledFL~year.adj)
 summary(model4)
 
+vals <- data.frame(year.adj=rep(1955,4), scaledFL=rep(10.5, 4), RA=c(2,3,4,5),
+                   slope = c(coefficients(model1)[2],coefficients(model2)[2],coefficients(model3)[2],coefficients(model4)[2]),
+                   rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared, summary(model4)$adj.r.squared))
 
-mod1byyear <- cbind(resid(model1), smolts[which(smolts$RA==2 & smolts$season=="spring"),])
-
-View(mod1byyear[which(mod1byyear$year.adj == 1995), ])
-View(mod1byyear[which(mod1byyear$year.adj == 1968), ])
-
-colnames(mod1byyear)[1] <- "resid"
-
-aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean)
-
-plot(aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean))
+plot1 + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "\nadj. Rsq. = ", round(rsq,4))), size=3, hjust=0)
+# 
+# 
+# mod1byyear <- cbind(resid(model1), smolts[which(smolts$RA==2 & smolts$season=="spring"),])
+# 
+# View(mod1byyear[which(mod1byyear$year.adj == 1995), ])
+# View(mod1byyear[which(mod1byyear$year.adj == 1968), ])
+# 
+# colnames(mod1byyear)[1] <- "resid"
+# 
+# aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean)
+# 
+# plot(aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean))
 
 allsmolts <- subset(salmon, RA %in% c(2,3,4,5) & TA <10 & is.na(TA)==FALSE & season=="spring")
 
@@ -303,12 +319,23 @@ summary(model1)
 model2 <- lm(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3 & agestr$SEX==2,], log(total)~TA) 
 summary(model2)
 
+### ok but this is not age-specific mortality. Papers recommend using dry weight to predict age-specific mortality, so need to calculate dry weight from length or from wet weight. For NL parr: log10(dryweight) = -2.43 + 2.76*log10(Length) OR log10(dryweight) = -2.43 + 2.76*(1.76 + log10(wetweight))/2.78
+parr <- subset(salmon, RA < 3 & FL<300 & WW <4000 & is.na(SA)==TRUE)
+parr$DW1 <- exp(-2.43 + 2.76*log10(parr$FL/10))
+
+ageweight <- ddply(.data=parr, .(RA),
+                   summarize,
+                   meanwt = mean(DW1))
+
+# McGurk 1986 weight-mortality relationship: Mw = 0.00526Wexp(-0.25)
+ageweight$Mw <- 0.00526*ageweight$meanwt^-0.25
+
 table(ian$LS)
 #smolting probability = LS 3 / LS 2
 966/5129 
 # = 0.1883
 
-#maturation probability = number of mature 
+#maturation probability = number of mature/number available
 
 max(table(salmon$AREA))
 site <- table(salmon$AREA)
@@ -317,6 +344,9 @@ site <- melt(site)
 site <- subset(site, value> 10000)
 
 unique(site$Var1)
+
+
+
 
 bigsites <- subset(salmon, AREA %in% c("70779", "361335", "490519"))
 ggplot() + geom_histogram(data=bigsites, aes(year.adj), binwidth=1, colour="black", fill=NA) + facet_wrap(~AREA) + theme_bw()
