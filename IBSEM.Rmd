@@ -158,6 +158,9 @@ names(ian)
 ian[,1:20] <- apply(ian[,1:20], 2, function(x) as.numeric(as.character(x)))
 
 
+## sites
+sites <- read.csv("C:/Users/keyserf/Documents/Data/sites_lat_long_brendan.csv")
+
 ## all the data
 salmon <- read.csv("C:/Users/keyserf/Documents/Data/All Biochar Oct 2013.csv", header=TRUE)
 names(salmon)
@@ -172,7 +175,6 @@ salmon[,5:28] <- apply(salmon[,5:28], 2, function(x) as.numeric(as.character(x))
 
 ## look at sampling timing
 ggplot() + geom_histogram(data=salmon, aes(MO), colour="black", fill="white") + scale_x_continuous(breaks=seq(0, 13,1)) + theme_bw() 
-
 
 ## format dates
 salmon$DATE <- ymd(paste0(salmon$year.adj,"-", salmon$MO,"-", salmon$DY))
@@ -192,14 +194,93 @@ ggplot() + geom_histogram(data=salmon[salmon$RA>1,], aes(MO, fill=as.factor(RA))
 ### need to separate by season due to summer growth
 salmon$season <- ifelse(salmon$MO %in% c(4,5,6), "spring", ifelse(salmon$MO %in% c(7,8), "summer", ifelse(salmon$MO %in% c(9,10,11), "fall", NA)))
 
+## unique(salmon$AREA) = 48
+## unique(salmon$year.adj) = 59
+## unique(salmon$MO) = 10 incl. NA
+## unique(salmon$DY) = 32 incl. NA
+## unique(salmon$GEAR) = 21 incl. NA
+## unique(salmon$LS) = 12 incl. NA
+## unique(salmon$FL) = 58 incl. NA
+## unique(salmon$WW) = >3300 incl. NA
+## unique(salmon$SEX) = 7 incl. NA
+## unique(salmon$MAT) = 5 incl. NA
+## unique(salmon$RA) = 13 incl. NA
+## unique(salmon$VSA) = 5 incl. NA
+## unique(salmon$TSM) = 8 incl. NA
+## unique(salmon$SSA1) = 4 incl. NA
+## unique(salmon$SSA2) = 3 incl. NA
+## unique(salmon$SSA3) = 3 incl. NA
+## unique(salmon$SSA4) = 2 incl. NA
+## unique(salmon$SA) = 8 incl. NA and 0? landlocked or?
+## unique(salmon$TA) = 15 incl. NA. 25 (1), 11 (5), 14 (1) too...
+## unique(salmon$EDGE) = 8 incl. NA
+## unique(salmon$REL) = 8 incl. NA
+## unique(salmon$TEGGS) = >1870 incl. NA
+
+
+##clean up by decade
+salmon$decade <- substr(salmon$year.adj, 3, 3)
+salmon$decade <- as.factor(salmon$decade)
+salmon$decade <- factor(salmon$decade, levels=c("5", "6", "7", "8", "9", "0", "1"))
+
+fifties <- subset(salmon, decade==5)
+sixties <- subset(salmon, decade==6)
+seventies <- subset(salmon, decade==7)
+eighties <- subset(salmon, decade==8)
+nineties <- subset(salmon, decade==9)
+millen <- subset(salmon, decade==0)
+teens <- subset(salmon, decade==1)
+
+boxplot(fifties$FL)
+boxplot(sixties$FL)
+boxplot(seventies$FL)
+boxplot(eighties$FL)
+boxplot(nineties$FL)
+boxplot(millen$FL)
+boxplot(teens$FL)
+
+ggplot() + geom_point(data=fifties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+ggplot() + geom_point(data=sixties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+ggplot() + geom_point(data=seventies, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+ggplot() + geom_point(data=eighties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+ggplot() + geom_point(data=nineties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+ggplot() + geom_point(data=millen, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+ggplot() + geom_point(data=teens, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+
+salmon$WWcorr <- salmon$WW/10
+unique(salmon_clean$AREA)
+salmon_clean <- subset(salmon, is.na(MO)==FALSE & is.na(FL)==FALSE & TA < 12 & AREA %in% c(sites$X.1, 341079))
+salmon_clean <- subset(salmon_clean, REL>2 | is.na(REL)==TRUE)
+salmon_NAs <- subset(salmon_clean, is.na(REL)==TRUE)
+salmon_best <- subset(salmon_clean, REL>3)
+
+ggplot() + geom_point(data=salmon_clean, aes(log(FL), log(WWcorr), colour=test)) + geom_smooth(data=salmon_clean, aes(log(FL), log(WWcorr)), method="lm") + facet_wrap(~TA)
+salmon_clean$test <- ifelse(salmon_clean$TA==4 & log(salmon_clean$FL) >6 & log(salmon_clean$WWcorr) <5, "bad",
+                            ifelse(salmon_clean$TA==5 & log(salmon_clean$FL) >6 & log(salmon_clean$WWcorr) <6.25, "bad",
+                                   ifelse(salmon_clean$TA==6 & log(salmon_clean$FL) >6 & log(salmon_clean$WWcorr) <6.5, "bad", "ok")))
+table(salmon_clean$test)
+salmon_clean <- subset(salmon_clean, !test=="bad")
+
+ggplot() + geom_point(data=salmon_clean, aes(TA, FL, colour=test)) + geom_smooth(data=salmon_clean, aes(TA, FL), method="lm") + facet_wrap(~LS)
+
+salmon_clean$season <- factor(salmon_clean$season, levels=c("spring", "summer", "fall"))
+
+ggplot() + geom_histogram(data=salmon_clean[salmon_clean$FL < 500,], aes(FL, fill=as.factor(AREA)), binwidth=20) + facet_grid(TA~season)
+ggplot() + geom_histogram(data=salmon_clean[salmon_clean$FL > 500,], aes(FL, fill=as.factor(AREA)), binwidth=20) + facet_grid(TA~season)
+
+ggplot() + geom_boxplot(data=salmon_clean, aes(decade, FL))
+ggplot() + geom_boxplot(data=salmon_clean, aes(decade, WWcorr))
+
+ggplot() + geom_point(data=salmon_NAs, aes(log(FL), log(WWcorr), colour=season)) + facet_grid(~decade) +
+  geom_smooth(data=salmon_NAs, aes(log(FL), log(WWcorr), colour=season), method="lm")
+
+
 ### only look at fish caught as smolts
-smolts <- subset(salmon, RA %in% c(2,3,4,5) & is.na(SA)==TRUE)
+smolts <- subset(salmon_clean, LS ==2)
 
 ### get rid of outliers
 ggplot() + geom_point(data=smolts, aes(FL, WW))
-smolts <- subset(smolts, is.na(FL)==FALSE & is.na(WW)==FALSE)
-smolts_clean <- subset(smolts, (FL<200 & WW < 5000) | (FL>200 & WW<40000) | FL==200)
-ggplot() + geom_point(data=smolts_clean, aes(FL, WW))
+ggplot() + geom_boxplot(data=smolts, aes(group=as.factor(TA), TA, FL))
 
 smolts$season <- factor(smolts$season, levels=c("spring", "summer", "fall"))
 
@@ -226,77 +307,11 @@ summary(model3)
 model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring"),], scaledFL~year.adj)
 summary(model4)
 
-vals <- data.frame(year.adj=rep(1955,4), scaledFL=rep(10.5, 4), RA=c(2,3,4,5),
+vals <- data.frame(year.adj=rep(1985,4), scaledFL=rep(7, 4), RA=c(2,3,4,5),
                    slope = c(coefficients(model1)[2],coefficients(model2)[2],coefficients(model3)[2],coefficients(model4)[2]),
                    rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared, summary(model4)$adj.r.squared))
 
-plot1 + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "\nadj. Rsq. = ", round(rsq,4))), size=3, hjust=0)
-# 
-# 
-# mod1byyear <- cbind(resid(model1), smolts[which(smolts$RA==2 & smolts$season=="spring"),])
-# 
-# View(mod1byyear[which(mod1byyear$year.adj == 1995), ])
-# View(mod1byyear[which(mod1byyear$year.adj == 1968), ])
-# 
-# colnames(mod1byyear)[1] <- "resid"
-# 
-# aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean)
-# 
-# plot(aggregate(resid ~ year.adj, data = mod1byyear, FUN = mean))
-
-allsmolts <- subset(salmon, RA %in% c(2,3,4,5) & TA <10 & is.na(TA)==FALSE & season=="spring")
-
-grid1 <- ggplot() + 
-  geom_point(data=allsmolts[allsmolts$season=="spring" & is.na(allsmolts$season)==FALSE,], aes(year.adj, FL)) + 
-  facet_grid(RA~TA) +
-  theme_bw() +
-  geom_smooth(data=allsmolts[allsmolts$season=="spring" & is.na(allsmolts$season)==FALSE,], aes(year.adj, FL), method="lm") + 
-  ylab("Fork length (mm)") 
-
-
-models <- ddply(.data=allsmolts, .(RA, TA),
-                function(x)
-                coef(lm(data=x, FL ~ year.adj)))
-
-models_rsq <- ddply(.data=allsmolts, .(RA, TA),
-                function(x)
-                summary(lm(data=x, FL ~ year.adj))$r.squared)
-
-models_pval <- ddply(.data=allsmolts, .(RA, TA),
-                function(x)
-                anova(lm(data=x, FL ~ year.adj))$'Pr(>F)'[1])
-
-models <- join(models, models_rsq, type="left")
-models$year<- 2011
-models$FL <- 1250
-
-grid1 <- grid1 + geom_text(data=models, aes(year, FL, label=paste0("slope: ", round(year.adj,3), "\n", "Rsq: ", round(V1,3))), size=3, hjust=1) 
-grid1
-
-
-ggplot() + geom_point(data=allsmolts, aes(TA, FL)) + geom_smooth(data=allsmolts, aes(TA, FL), method="lm")
-lm1 <- lm(data=allsmolts, FL ~ TA)
-summary(lm1)
-# FL = -220.8338 + 131.2867*TA
-
-allsmolts$predsmoltlength <- -220.8338 + 131.2867*(allsmolts$RA)
-
-ggplot() + geom_point(data=allsmolts, aes(RA, predsmoltlength))
-
-models_year <- ddply(.data=allsmolts, .(year.adj),
-                function(x)
-                coef(lm(data=x, FL ~ TA)))
-names(models_year) <- c("year.adj", "Intercept", "Slope")
-
-allsmolts <- join(allsmolts, models_year, type="left")
-
-allsmolts$predsmoltlength <- allsmolts$Intercept + (allsmolts$Slope*allsmolts$RA)
-
-ggplot() + geom_point(data=allsmolts, aes(year.adj, predsmoltlength)) + 
-  facet_wrap(~RA) + 
-  geom_smooth(data=allsmolts, aes(year.adj, predsmoltlength), method="lm")
-
-
+plot1 + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4))), size=3, hjust=0) + ylim(-3, 8)
 
 ##############################
 
