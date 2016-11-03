@@ -316,23 +316,26 @@ plot1 + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", ro
 ##############################
 
 ## Calculating natural mortality
-agestr <- ddply(.data=salmon[salmon$SEX %in% c(1,2),], .(TA, SEX),
+
+salmon_clean$sex.adj <- ifelse(salmon_clean$SEX %in% c(1, 3, 4), "M", ifelse(salmon_clean$SEX %in% c(2,5), "F", NA))
+
+agestr <- ddply(.data=salmon_clean[!is.na(salmon_clean$SEX)==TRUE,], .(TA, sex.adj),
                 summarize,
                 total = length(FL))
 
-ggplot() + geom_point(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3,], aes(TA, log(total))) + facet_wrap(~SEX) +
-  geom_smooth(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3,], aes(TA, log(total)), method="lm") +
+ggplot() + geom_point(data=agestr, aes(TA, log(total))) + facet_wrap(~sex.adj) +
+  geom_smooth(data=agestr[agestr$TA>3,], aes(TA, log(total)), method="lm") +
   theme_classic() + theme(panel.border=element_rect(colour="black", fill=NA))
-# total mortality for sex 1 = -1.43792 | for sex 2 = -1.6628
-# error for sex 1 = 0.09739 | for sex 2 = 0.1194
+
+model1 <- lm(data=agestr[agestr$TA >4 & agestr$sex.adj=="M",], log(total)~TA) 
+summary(model1)
+model2 <- lm(data=agestr[agestr$TA >4 & agestr$sex.adj=="F",], log(total)~TA) 
+summary(model2)
+
+# total mortality for males = -2.4299 | for females = -2.22645
+# error for males = 0.1343 | for females = 0.06711
 
 # exp(-1.43792) = 0.2374211 survival per year
-
-
-model1 <- lm(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3 & agestr$SEX==1,], log(total)~TA) 
-summary(model1)
-model2 <- lm(data=agestr[is.na(agestr$TA)==FALSE & agestr$TA >3 & agestr$SEX==2,], log(total)~TA) 
-summary(model2)
 
 ### ok but this is not age-specific mortality. Papers recommend using dry weight to predict age-specific mortality, so need to calculate dry weight from length or from wet weight. For NL parr: log10(dryweight) = -2.43 + 2.76*log10(Length) OR log10(dryweight) = -2.43 + 2.76*(1.76 + log10(wetweight))/2.78
 parr <- subset(salmon, RA < 3 & FL<300 & WW <4000 & is.na(SA)==TRUE)
