@@ -223,70 +223,75 @@ salmon$decade <- substr(salmon$year.adj, 3, 3)
 salmon$decade <- as.factor(salmon$decade)
 salmon$decade <- factor(salmon$decade, levels=c("5", "6", "7", "8", "9", "0", "1"))
 
-fifties <- subset(salmon, decade==5)
-sixties <- subset(salmon, decade==6)
-seventies <- subset(salmon, decade==7)
-eighties <- subset(salmon, decade==8)
-nineties <- subset(salmon, decade==9)
-millen <- subset(salmon, decade==0)
-teens <- subset(salmon, decade==1)
-
-boxplot(fifties$FL)
-boxplot(sixties$FL)
-boxplot(seventies$FL)
-boxplot(eighties$FL)
-boxplot(nineties$FL)
-boxplot(millen$FL)
-boxplot(teens$FL)
-
-ggplot() + geom_point(data=fifties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
-ggplot() + geom_point(data=sixties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
-ggplot() + geom_point(data=seventies, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
-ggplot() + geom_point(data=eighties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
-ggplot() + geom_point(data=nineties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
-ggplot() + geom_point(data=millen, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
-ggplot() + geom_point(data=teens, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# fifties <- subset(salmon, decade==5)
+# sixties <- subset(salmon, decade==6)
+# seventies <- subset(salmon, decade==7)
+# eighties <- subset(salmon, decade==8)
+# nineties <- subset(salmon, decade==9)
+# millen <- subset(salmon, decade==0)
+# teens <- subset(salmon, decade==1)
+# 
+# boxplot(fifties$FL)
+# boxplot(sixties$FL)
+# boxplot(seventies$FL)
+# boxplot(eighties$FL)
+# boxplot(nineties$FL)
+# boxplot(millen$FL)
+# boxplot(teens$FL)
+# 
+# ggplot() + geom_point(data=fifties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# ggplot() + geom_point(data=sixties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# ggplot() + geom_point(data=seventies, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# ggplot() + geom_point(data=eighties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# ggplot() + geom_point(data=nineties, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# ggplot() + geom_point(data=millen, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
+# ggplot() + geom_point(data=teens, aes(FL, WW, colour=season), alpha=0.5) + facet_wrap(~AREA) + theme_bw() + theme(panel.grid=element_blank())
 
 salmon$WWcorr <- salmon$WW/10
-unique(salmon_clean$AREA)
+#unique(salmon_clean$AREA)
 salmon_clean <- subset(salmon, is.na(MO)==FALSE & is.na(FL)==FALSE & TA < 12 & AREA %in% c(sites$X.1, 341079))
 salmon_clean <- subset(salmon_clean, REL>2 | is.na(REL)==TRUE)
-salmon_NAs <- subset(salmon_clean, is.na(REL)==TRUE)
-salmon_best <- subset(salmon_clean, REL>3)
+#salmon_NAs <- subset(salmon_clean, is.na(REL)==TRUE)
+#salmon_best <- subset(salmon_clean, REL>3)
 
-ggplot() + geom_point(data=salmon_clean, aes(log(FL), log(WWcorr), colour=test)) + geom_smooth(data=salmon_clean, aes(log(FL), log(WWcorr)), method="lm") + facet_wrap(~TA)
+#ggplot() + geom_point(data=salmon_clean, aes(log(FL), log(WWcorr), colour=test)) + geom_smooth(data=salmon_clean, aes(log(FL), log(WWcorr)), method="lm") + facet_wrap(~TA)
+
 salmon_clean$test <- ifelse(salmon_clean$TA==4 & log(salmon_clean$FL) >6 & log(salmon_clean$WWcorr) <5, "bad",
                             ifelse(salmon_clean$TA==5 & log(salmon_clean$FL) >6 & log(salmon_clean$WWcorr) <6.25, "bad",
                                    ifelse(salmon_clean$TA==6 & log(salmon_clean$FL) >6 & log(salmon_clean$WWcorr) <6.5, "bad", "ok")))
-table(salmon_clean$test)
+#table(salmon_clean$test)
 salmon_clean <- subset(salmon_clean, !test=="bad")
 
-ggplot() + geom_point(data=salmon_clean, aes(TA, FL, colour=test)) + geom_smooth(data=salmon_clean, aes(TA, FL), method="lm") + facet_wrap(~LS)
+#ggplot() + geom_point(data=salmon_clean, aes(TA, FL, colour=test)) + geom_smooth(data=salmon_clean, aes(TA, FL), method="lm") + facet_wrap(~LS)
 
 salmon_clean$season <- factor(salmon_clean$season, levels=c("spring", "summer", "fall"))
 
-ggplot() + geom_histogram(data=salmon_clean[salmon_clean$FL < 500,], aes(FL, fill=as.factor(AREA)), binwidth=20) + facet_grid(TA~season)
-ggplot() + geom_histogram(data=salmon_clean[salmon_clean$FL > 500,], aes(FL, fill=as.factor(AREA)), binwidth=20) + facet_grid(TA~season)
-
-ggplot() + geom_boxplot(data=salmon_clean, aes(decade, FL))
-ggplot() + geom_boxplot(data=salmon_clean, aes(decade, WWcorr))
-
-ggplot() + geom_point(data=salmon_NAs, aes(log(FL), log(WWcorr), colour=season)) + facet_grid(~decade) +
-  geom_smooth(data=salmon_NAs, aes(log(FL), log(WWcorr), colour=season), method="lm")
+# ggplot() + geom_histogram(data=salmon_clean[salmon_clean$FL < 500,], aes(FL, fill=as.factor(AREA)), binwidth=20) + facet_grid(TA~season)
+# ggplot() + geom_histogram(data=salmon_clean[salmon_clean$FL > 500,], aes(FL, fill=as.factor(AREA)), binwidth=20) + facet_grid(TA~season)
+# 
+# ggplot() + geom_boxplot(data=salmon_clean, aes(decade, FL))
+# ggplot() + geom_boxplot(data=salmon_clean, aes(decade, WWcorr))
+# 
+# ggplot() + geom_point(data=salmon_NAs, aes(log(FL), log(WWcorr), colour=season)) + facet_grid(~decade) +
+#   geom_smooth(data=salmon_NAs, aes(log(FL), log(WWcorr), colour=season), method="lm")
+```
 
 
 ### only look at fish caught as smolts
+```{r}
 smolts <- subset(salmon_clean, LS ==2)
 
 ### get rid of outliers
-ggplot() + geom_point(data=smolts, aes(FL, WW))
-ggplot() + geom_boxplot(data=smolts, aes(group=as.factor(TA), TA, FL))
+# ggplot() + geom_point(data=smolts, aes(FL, WW))
+# ggplot() + geom_boxplot(data=smolts, aes(group=as.factor(TA), TA, FL))
 
 smolts$season <- factor(smolts$season, levels=c("spring", "summer", "fall"))
 
 smolts$scaledFL <- base::scale(smolts$FL)
+```
 
 ### plot smolt lengths against year and by nyears in river 
+```{r}
 plot1 <- ggplot() + 
   geom_point(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, scaledFL), size=0.5) + 
   facet_grid(RA~.) +
@@ -314,9 +319,11 @@ vals <- data.frame(year.adj=rep(1985,4), scaledFL=rep(7, 4), RA=c(2,3,4,5),
 plot1 + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4))), size=3, hjust=0) + ylim(-3, 8)
 
 ##############################
+```
+
 
 ## Calculating natural mortality
-
+```{r}
 salmon_clean$sex.adj <- ifelse(salmon_clean$SEX %in% c(1, 3, 4), "M", ifelse(salmon_clean$SEX %in% c(2,5), "F", NA))
 
 agestr <- ddply(.data=salmon_clean[!is.na(salmon_clean$SEX)==TRUE,], .(TA, sex.adj),
@@ -335,10 +342,33 @@ summary(model2)
 # total mortality for males = -2.4299 | for females = -2.22645
 # error for males = 0.1343 | for females = 0.06711
 
-# exp(-1.43792) = 0.2374211 survival per year
+# exp(-2.4299) = 0.08804564 survival per year males = 8.8% survival?
+# exp(-2.22645) = 0.1079108 survival per year females =10.7% survival?
+
+mortF4 <- log(3583) - log(687)
+mortF5 <- log(687) - log(66)
+mortF6 <- log(66) - log(8)
+mortM4 <- log(1216) - log(258)
+mortM5 <- log(258) - log(18)
+mortM6 <- log(18) - log(2)
+
+rates <- data.frame(rate=rbind(mortF4, mortF5, mortF6, mortM4, mortM5, mortM6))
+rates <- data.frame(cbind(round(rates,3), sex=c(rep("F",3), rep("M", 3)), age=c(4,5,6,4,5,6)))
+
+rates$surv <- round(exp(-rates$rate),3)
+rates
+## survival per year for each age/sex combo
+# rate sex age  surv
+# 1.652   F   4 0.192
+# 2.343   F   5 0.096
+# 2.110   F   6 0.121
+# 1.550   M   4 0.212
+# 2.197   M   5 0.111
+# 2.197   M   6 0.111
+
 
 ### ok but this is not age-specific mortality. Papers recommend using dry weight to predict age-specific mortality, so need to calculate dry weight from length or from wet weight. For NL parr: log10(dryweight) = -2.43 + 2.76*log10(Length) OR log10(dryweight) = -2.43 + 2.76*(1.76 + log10(wetweight))/2.78
-parr <- subset(salmon, RA < 3 & FL<300 & WW <4000 & is.na(SA)==TRUE)
+parr <- subset(salmon_clean, LS==1)
 parr$DW1 <- exp(-2.43 + 2.76*log10(parr$FL/10))
 
 ageweight <- ddply(.data=parr, .(RA),
@@ -348,7 +378,7 @@ ageweight <- ddply(.data=parr, .(RA),
 # McGurk 1986 weight-mortality relationship: Mw = 0.00526Wexp(-0.25)
 ageweight$Mw <- 0.00526*ageweight$meanwt^-0.25
 
-table(ian$LS)
+
 #smolting probability = LS 3 / LS 2
 966/5129 
 # = 0.1883
@@ -362,33 +392,8 @@ site <- melt(site)
 site <- subset(site, value> 10000)
 
 unique(site$Var1)
-
-
-
-
-bigsites <- subset(salmon, AREA %in% c("70779", "361335", "490519"))
-ggplot() + geom_histogram(data=bigsites, aes(year.adj), binwidth=1, colour="black", fill=NA) + facet_wrap(~AREA) + theme_bw()
-
-ddply(.data= ddply(.data=bigsites, .(AREA, year.adj),
-      summarize,
-      total = length(FL)),
-      .(AREA),
-      summarize,
-      smallest = min(total),
-      largest = max(total))
-
-### let's only look at site area 490519 because it has somewhat consistent sampling effort
-
-bestsite <- subset(salmon, AREA == 490519)
-bestsiteTA <- ddply(.data=bestsite, .(TA),
-                    summarize,
-                    total=length(FL))
-
-ggplot() + geom_point(data=bestsiteTA[bestsiteTA$TA>3,], aes(TA, log(total))) + 
-  geom_smooth(data=bestsiteTA[bestsiteTA$TA>3,], aes(TA, log(total)), method="lm") + 
-  theme_bw()
-
 ```
+
 
 ### try Piou and Prevost IBASAM package
 ```{r}
@@ -400,3 +405,183 @@ update.packages(checkBuilt=TRUE, ask=FALSE)
 
 library(devtools)
 install("C:/Users/keyserf/Documents/Data/Ibasam/Compiled/Ibasam_2.1.0.zip")
+
+```
+
+
+### FOR PARR PRESENTATION
+```{r}
+## example plots
+## Figure 9 - a,b,c from paper (scenario 3: Low, medium, high)
+adult <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
+heritabilityFreshwater <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/heritabilityFreshwater.txt", header=TRUE)
+heritabilitySea <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/heritabilitySea.txt", header=TRUE)
+smolts <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/smolts.txt",header=TRUE)
+embryo <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/embryo.txt", fill=TRUE, colClasses = "character")
+parr0 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/parr0.txt", header=TRUE)
+parr1 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/parr1.txt", header=TRUE)
+parr2 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/parr2.txt", header=TRUE)
+spawners <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/spawners.txt", fill=TRUE, colClasses = "character")
+
+colnames(spawners) <- spawners[1,]
+spawners <- spawners[2:399,]
+colnames(embryo) <- embryo[1,]
+embryo <- embryo[2:399,]
+embryo[,c(1,30:31)] <- apply(embryo[,c(1,30:31)], 2, function(x) as.numeric(x))
+embryo <- subset(embryo, is.na(genotypicValueAverage)=="FALSE")
+adult <- subset(adult, is.na(genotypicValueAverage)=="FALSE")
+smolts <- subset(smolts, is.na(genotypicValueAverage)=="FALSE")
+
+labels <- data.frame(month=c(5000, 5000, 5000), genotypicValueAverage=c(0.93, 0.89, 0.8), text=c("Adult", "Smolt", "Embryo"))
+
+## genetic effects (low introgression, scenario 3)
+plot9a1 <- ggplot() + 
+  geom_ribbon(data=embryo, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25) +
+  geom_ribbon(data=adult, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25) +
+  geom_ribbon(data=smolts, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25)+
+  geom_point(data=adult, aes(month, genotypicValueAverage), shape=1) +
+  geom_point(data=embryo, aes(month, genotypicValueAverage), shape=4) + 
+  geom_point(data=smolts, aes(month, genotypicValueAverage), shape=2) +
+  geom_text(data=labels, aes(month, genotypicValueAverage, label=text)) +
+  xlim(600,5500) +
+  ylim(0.7, 1)+
+  xlab("Month") +
+  ylab("Average genotypic value") +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black"))
+
+colnames(spawners)[9:12] <- c("SW0", "SW1", "SW2", "SW3")
+
+spawners[,c(1:51)] <- apply(spawners[,c(1:51)], 2, function(x) as.numeric(x))
+
+
+### adult spawner population size (low introgression, scenario 3)
+spawn_popsize <- spawners[,c(1,9:12)]
+spawn_popsize <- melt(data=spawn_popsize, id.vars=c("month"))
+
+plot9a2 <- ggplot() + 
+  geom_point(data=spawn_popsize[!spawn_popsize$variable =="SW0",], aes(month, value))+
+  facet_wrap(~variable, nrow=3) +
+  xlab("Month") +
+  ylab("Population size") +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black"))
+                  
+grid.arrange(plot9a1, plot9a2, ncol=2, top="Low introgression, standard parameters")
+
+
+### plot 9B medium introgression
+
+adult <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
+heritabilityFreshwater <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/heritabilityFreshwater.txt", header=TRUE)
+heritabilitySea <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/heritabilitySea.txt", header=TRUE)
+smolts <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/smolts.txt",header=TRUE)
+embryo <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/embryo.txt", fill=TRUE, colClasses = "character")
+parr0 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/parr0.txt", header=TRUE)
+parr1 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/parr1.txt", header=TRUE)
+parr2 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/parr2.txt", header=TRUE)
+spawners <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/spawners.txt", fill=TRUE, colClasses = "character")
+
+colnames(spawners) <- spawners[1,]
+spawners <- spawners[2:399,]
+colnames(embryo) <- embryo[1,]
+embryo <- embryo[2:399,]
+embryo[,c(1,30:31)] <- apply(embryo[,c(1,30:31)], 2, function(x) as.numeric(x))
+embryo <- subset(embryo, is.na(genotypicValueAverage)=="FALSE")
+adult <- subset(adult, is.na(genotypicValueAverage)=="FALSE")
+smolts <- subset(smolts, is.na(genotypicValueAverage)=="FALSE")
+
+labels <- data.frame(month=c(5000, 5000, 5000), genotypicValueAverage=c(0.925, 0.825, 0.73), text=c("Adult", "Smolt", "Embryo"))
+
+plot9b1 <- ggplot() + 
+  geom_ribbon(data=embryo, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25) +
+  geom_ribbon(data=adult, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25) +
+  geom_ribbon(data=smolts, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25)+
+  geom_point(data=adult, aes(month, genotypicValueAverage), shape=1) +
+  geom_point(data=embryo, aes(month, genotypicValueAverage), shape=4) + 
+  geom_point(data=smolts, aes(month, genotypicValueAverage), shape=2) +
+  geom_text(data=labels, aes(month, genotypicValueAverage, label=text)) +
+  xlim(600,5500) +
+  ylim(0.6, 1)+
+  xlab("Month") +
+  ylab("Average genotypic value") +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black"))
+
+colnames(spawners)[9:12] <- c("SW0", "SW1", "SW2", "SW3")
+
+spawners[,c(1:51)] <- apply(spawners[,c(1:51)], 2, function(x) as.numeric(x))
+
+
+### adult spawner population size (med introgression, scenario 3)
+spawn_popsize <- spawners[,c(1,9:12)]
+spawn_popsize <- melt(data=spawn_popsize, id.vars=c("month"))
+
+plot9b2 <- ggplot() + 
+  geom_point(data=spawn_popsize[!spawn_popsize$variable =="SW0",], aes(month, value))+
+  facet_wrap(~variable, nrow=3) +
+  xlab("Month") +
+  ylab("Population size") +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black"))
+                  
+grid.arrange(plot9b1, plot9b2, ncol=2, top="Medium introgression, standard parameters")
+
+### plot 9C high introgression
+
+adult <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
+heritabilityFreshwater <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/heritabilityFreshwater.txt", header=TRUE)
+heritabilitySea <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/heritabilitySea.txt", header=TRUE)
+smolts <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/smolts.txt",header=TRUE)
+embryo <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/embryo.txt", fill=TRUE, colClasses = "character")
+parr0 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/parr0.txt", header=TRUE)
+parr1 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/parr1.txt", header=TRUE)
+parr2 <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/parr2.txt", header=TRUE)
+spawners <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/spawners.txt", fill=TRUE, colClasses = "character")
+
+colnames(spawners) <- spawners[1,]
+spawners <- spawners[2:399,]
+colnames(embryo) <- embryo[1,]
+embryo <- embryo[2:399,]
+embryo[,c(1,30:31)] <- apply(embryo[,c(1,30:31)], 2, function(x) as.numeric(x))
+embryo <- subset(embryo, is.na(genotypicValueAverage)=="FALSE")
+adult <- subset(adult, is.na(genotypicValueAverage)=="FALSE")
+smolts <- subset(smolts, is.na(genotypicValueAverage)=="FALSE")
+
+labels <- data.frame(month=c(200, 200, 200), genotypicValueAverage=c(0.925, 0.85, 0.77), text=c("Adult", "Smolt", "Embryo"))
+
+plot9c1 <- ggplot() + 
+  geom_ribbon(data=embryo, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25) +
+  geom_ribbon(data=adult, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25) +
+  geom_ribbon(data=smolts, aes(month, ymax=genotypicValueAverage+(genotypicValueStDev/sqrt(21)), ymin=genotypicValueAverage-(genotypicValueStDev/sqrt(21))), fill="black", alpha=0.25)+
+  geom_point(data=adult, aes(month, genotypicValueAverage), shape=1) +
+  geom_point(data=embryo, aes(month, genotypicValueAverage), shape=4) + 
+  geom_point(data=smolts, aes(month, genotypicValueAverage), shape=2) +
+  geom_text(data=labels, aes(month, genotypicValueAverage, label=text)) +
+  xlim(0,5500) +
+  ylim(0, 1)+
+  xlab("Month") +
+  ylab("Average genotypic value") +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black"))
+
+colnames(spawners)[9:12] <- c("SW0", "SW1", "SW2", "SW3")
+
+spawners[,c(1:51)] <- apply(spawners[,c(1:51)], 2, function(x) as.numeric(x))
+
+
+### adult spawner population size (med introgression, scenario 3)
+spawn_popsize <- spawners[,c(1,9:12)]
+spawn_popsize <- melt(data=spawn_popsize, id.vars=c("month"))
+
+plot9c2 <- ggplot() + 
+  geom_point(data=spawn_popsize[!spawn_popsize$variable =="SW0",], aes(month, value))+
+  facet_wrap(~variable, nrow=3) +
+  xlab("Month") +
+  ylab("Population size") +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black"))
+                  
+grid.arrange(plot9c1, plot9c2, ncol=2, top="High introgression, standard parameters")
+
+```
