@@ -470,6 +470,157 @@ plot9a2 <- ggplot() +
 grid.arrange(plot9a1, plot9a2, ncol=2, top="Low introgression, standard parameters")
 
 
+### plot 7a1-3
+str(embryo)
+embryo[,9:29] <- apply(embryo[,9:29], 2, function(x) as.numeric(x))
+embryoplot <- dplyr::select(embryo, month, 9:29)
+embryoplot <- melt(embryoplot, id.vars="month")
+embryoplot <- subset(embryoplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+embryoplot$variable <- as.factor(as.character(embryoplot$variable))
+
+levels(embryoplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=embryoplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+  
+embryoplot$timebin[embryoplot$month <1200] <- "50-100"
+embryoplot$timebin[embryoplot$month >1199 & embryoplot$month <2400] <- "100-200"
+embryoplot$timebin[embryoplot$month >2399 & embryoplot$month <3600] <- "200-300"
+embryoplot$timebin[embryoplot$month >3599 & embryoplot$month <4800] <- "300-400"
+embryoplot$timebin[embryoplot$month >4799 & embryoplot$month <6000] <- "400-500"
+
+embryoplot$timebin <- factor(embryoplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+embryomean <- ddply(.data=embryoplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7emb <- ggplot() + geom_boxplot(data=embryoplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=embryomean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") +
+  ggtitle("Embryos")
+
+# smolt
+### plot 7a1-3
+str(smolts)
+smolts[,25:45] <- apply(smolts[,25:45], 2, function(x) as.numeric(x))
+smoltsplot <- dplyr::select(smolts, month, 25:45)
+smoltsplot <- melt(smoltsplot, id.vars="month")
+smoltsplot <- subset(smoltsplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+smoltsplot$variable <- as.factor(as.character(smoltsplot$variable))
+
+levels(smoltsplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=smoltsplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+  
+smoltsplot$timebin[smoltsplot$month <1200] <- "50-100"
+smoltsplot$timebin[smoltsplot$month >1199 & smoltsplot$month <2400] <- "100-200"
+smoltsplot$timebin[smoltsplot$month >2399 & smoltsplot$month <3600] <- "200-300"
+smoltsplot$timebin[smoltsplot$month >3599 & smoltsplot$month <4800] <- "300-400"
+smoltsplot$timebin[smoltsplot$month >4799 & smoltsplot$month <6000] <- "400-500"
+
+smoltsplot$timebin <- factor(smoltsplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+smoltsmean <- ddply(.data=smoltsplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7smolts <- ggplot() + geom_boxplot(data=smoltsplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=smoltsmean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") +
+  ggtitle("Smolts")
+
+# adult
+### plot 7a1-3
+str(adult)
+adult[,30:50] <- apply(adult[,30:50], 2, function(x) as.numeric(x))
+adultplot <- dplyr::select(adult, month, 30:50)
+adultplot <- melt(adultplot, id.vars="month")
+adultplot <- subset(adultplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+adultplot$variable <- as.factor(as.character(adultplot$variable))
+
+levels(adultplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=adultplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+
+adultplot$timebin[adultplot$month <1200] <- "50-100"
+adultplot$timebin[adultplot$month >1199 & adultplot$month <2400] <- "100-200"
+adultplot$timebin[adultplot$month >2399 & adultplot$month <3600] <- "200-300"
+adultplot$timebin[adultplot$month >3599 & adultplot$month <4800] <- "300-400"
+adultplot$timebin[adultplot$month >4799 & adultplot$month <6000] <- "400-500"
+
+adultplot$timebin <- factor(adultplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+adultmean <- ddply(.data=adultplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7adults <- ggplot() + geom_boxplot(data=adultplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=adultmean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") + 
+  ggtitle("Adults")
+
+grid.arrange(plot7emb,plot7smolts, plot7adults, nrow=3, top="Low introgression, standard parameters")
+
 ### plot 9B medium introgression
 
 adult <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
@@ -526,6 +677,162 @@ plot9b2 <- ggplot() +
   theme(panel.background=element_rect(colour="black"))
                   
 grid.arrange(plot9b1, plot9b2, ncol=2, top="Medium introgression, standard parameters")
+
+
+
+### plot 7a1-3
+str(embryo)
+embryo[,9:29] <- apply(embryo[,9:29], 2, function(x) as.numeric(x))
+embryoplot <- dplyr::select(embryo, month, 9:29)
+embryoplot <- melt(embryoplot, id.vars="month")
+embryoplot <- subset(embryoplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+embryoplot$variable <- as.factor(as.character(embryoplot$variable))
+
+levels(embryoplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=embryoplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+  
+embryoplot$timebin[embryoplot$month <1200] <- "50-100"
+embryoplot$timebin[embryoplot$month >1199 & embryoplot$month <2400] <- "100-200"
+embryoplot$timebin[embryoplot$month >2399 & embryoplot$month <3600] <- "200-300"
+embryoplot$timebin[embryoplot$month >3599 & embryoplot$month <4800] <- "300-400"
+embryoplot$timebin[embryoplot$month >4799 & embryoplot$month <6000] <- "400-500"
+
+embryoplot$timebin <- factor(embryoplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+embryomean <- ddply(.data=embryoplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7emb <- ggplot() + geom_boxplot(data=embryoplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=embryomean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") +
+  ggtitle("Embryos")
+
+# smolt
+### plot 7a1-3
+str(smolts)
+smolts[,25:45] <- apply(smolts[,25:45], 2, function(x) as.numeric(x))
+smoltsplot <- dplyr::select(smolts, month, 25:45)
+smoltsplot <- melt(smoltsplot, id.vars="month")
+smoltsplot <- subset(smoltsplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+smoltsplot$variable <- as.factor(as.character(smoltsplot$variable))
+
+levels(smoltsplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=smoltsplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+  
+smoltsplot$timebin[smoltsplot$month <1200] <- "50-100"
+smoltsplot$timebin[smoltsplot$month >1199 & smoltsplot$month <2400] <- "100-200"
+smoltsplot$timebin[smoltsplot$month >2399 & smoltsplot$month <3600] <- "200-300"
+smoltsplot$timebin[smoltsplot$month >3599 & smoltsplot$month <4800] <- "300-400"
+smoltsplot$timebin[smoltsplot$month >4799 & smoltsplot$month <6000] <- "400-500"
+
+smoltsplot$timebin <- factor(smoltsplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+smoltsmean <- ddply(.data=smoltsplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7smolts <- ggplot() + geom_boxplot(data=smoltsplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=smoltsmean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") +
+  ggtitle("Smolts")
+
+# adult
+### plot 7a1-3
+str(adult)
+adult[,30:50] <- apply(adult[,30:50], 2, function(x) as.numeric(x))
+adultplot <- dplyr::select(adult, month, 30:50)
+adultplot <- melt(adultplot, id.vars="month")
+adultplot <- subset(adultplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+adultplot$variable <- as.factor(as.character(adultplot$variable))
+
+levels(adultplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=adultplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+
+adultplot$timebin[adultplot$month <1200] <- "50-100"
+adultplot$timebin[adultplot$month >1199 & adultplot$month <2400] <- "100-200"
+adultplot$timebin[adultplot$month >2399 & adultplot$month <3600] <- "200-300"
+adultplot$timebin[adultplot$month >3599 & adultplot$month <4800] <- "300-400"
+adultplot$timebin[adultplot$month >4799 & adultplot$month <6000] <- "400-500"
+
+adultplot$timebin <- factor(adultplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+adultmean <- ddply(.data=adultplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7adults <- ggplot() + geom_boxplot(data=adultplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=adultmean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") + 
+  ggtitle("Adults")
+
+grid.arrange(plot7emb,plot7smolts, plot7adults, nrow=3, top="Medium introgression, standard parameters")
+
+
+
 
 ### plot 9C high introgression
 
@@ -584,4 +891,239 @@ plot9c2 <- ggplot() +
                   
 grid.arrange(plot9c1, plot9c2, ncol=2, top="High introgression, standard parameters")
 
+
+
+### plot 7a1-3
+str(embryo)
+embryo[,9:29] <- apply(embryo[,9:29], 2, function(x) as.numeric(x))
+embryoplot <- dplyr::select(embryo, month, 9:29)
+embryoplot <- melt(embryoplot, id.vars="month")
+embryoplot <- subset(embryoplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+embryoplot$variable <- as.factor(as.character(embryoplot$variable))
+
+levels(embryoplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=embryoplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+  
+embryoplot$timebin[embryoplot$month <1200] <- "50-100"
+embryoplot$timebin[embryoplot$month >1199 & embryoplot$month <2400] <- "100-200"
+embryoplot$timebin[embryoplot$month >2399 & embryoplot$month <3600] <- "200-300"
+embryoplot$timebin[embryoplot$month >3599 & embryoplot$month <4800] <- "300-400"
+embryoplot$timebin[embryoplot$month >4799 & embryoplot$month <6000] <- "400-500"
+
+embryoplot$timebin <- factor(embryoplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+embryomean <- ddply(.data=embryoplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7emb <- ggplot() + geom_boxplot(data=embryoplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=embryomean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") +
+  ggtitle("Embryos")
+
+# smolt
+### plot 7a1-3
+str(smolts)
+smolts[,25:45] <- apply(smolts[,25:45], 2, function(x) as.numeric(x))
+smoltsplot <- dplyr::select(smolts, month, 25:45)
+smoltsplot <- melt(smoltsplot, id.vars="month")
+smoltsplot <- subset(smoltsplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+smoltsplot$variable <- as.factor(as.character(smoltsplot$variable))
+
+levels(smoltsplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=smoltsplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+  
+smoltsplot$timebin[smoltsplot$month <1200] <- "50-100"
+smoltsplot$timebin[smoltsplot$month >1199 & smoltsplot$month <2400] <- "100-200"
+smoltsplot$timebin[smoltsplot$month >2399 & smoltsplot$month <3600] <- "200-300"
+smoltsplot$timebin[smoltsplot$month >3599 & smoltsplot$month <4800] <- "300-400"
+smoltsplot$timebin[smoltsplot$month >4799 & smoltsplot$month <6000] <- "400-500"
+
+smoltsplot$timebin <- factor(smoltsplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+smoltsmean <- ddply(.data=smoltsplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7smolts <- ggplot() + geom_boxplot(data=smoltsplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=smoltsmean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") +
+  ggtitle("Smolts")
+
+# adult
+### plot 7a1-3
+str(adult)
+adult[,30:50] <- apply(adult[,30:50], 2, function(x) as.numeric(x))
+adultplot <- dplyr::select(adult, month, 30:50)
+adultplot <- melt(adultplot, id.vars="month")
+adultplot <- subset(adultplot, variable %in% c("allele_0_0_Frequency",
+                                                 "allele_0_4_Frequency",
+                                                 "allele_0_9_Frequency",
+                                                 "allele_0_14_Frequency",
+                                                 "allele_0_19_Frequency",
+                                                 "allele_0_20_Frequency"))
+adultplot$variable <- as.factor(as.character(adultplot$variable))
+
+levels(adultplot$variable) <- c("1", "5", "10", "15", "20", "21") 
+
+ggplot() + geom_line(data=adultplot, aes(month, value, colour=variable))+
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Month") +
+  ylab("Allele frequency") +
+  scale_colour_discrete(name="Gene")
+
+adultplot$timebin[adultplot$month <1200] <- "50-100"
+adultplot$timebin[adultplot$month >1199 & adultplot$month <2400] <- "100-200"
+adultplot$timebin[adultplot$month >2399 & adultplot$month <3600] <- "200-300"
+adultplot$timebin[adultplot$month >3599 & adultplot$month <4800] <- "300-400"
+adultplot$timebin[adultplot$month >4799 & adultplot$month <6000] <- "400-500"
+
+adultplot$timebin <- factor(adultplot$timebin, levels=c("50-100", 
+                                                          "100-200",
+                                                          "200-300",
+                                                          "300-400",
+                                                          "400-500"))
+
+adultmean <- ddply(.data=adultplot, .(timebin, variable),
+                    summarize,
+                    value = mean(value))
+
+plot7adults <- ggplot() + geom_boxplot(data=adultplot, aes(timebin, value, fill=variable), position=position_dodge(width=0.25)) +
+  geom_line(data=adultmean, aes(timebin, value, group=variable, colour=variable), linetype="dashed")+
+  #facet_wrap(~variable) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Year span") +
+  ylab("Allele frequency") +
+  scale_fill_discrete(name="Gene") +
+  scale_colour_discrete(name="Gene") + 
+  ggtitle("Adults")
+
+grid.arrange(plot7emb,plot7smolts, plot7adults, nrow=3, top="High introgression, standard parameters")
+
 ```
+
+### scenario 3 adult pop summaries (low, med, high)
+```{r}
+adultlo <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 25 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
+adultme <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 100 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
+adulthi <- read.table("C:/Users/keyserf/Documents/Data/IBSEM data/temp/scenario 3/farm 250 - same strayers 5%/wild - 1/runFiles/results/adult.txt", header=TRUE)
+
+head(adultlo)
+adultlo <- adultlo[,1:29]
+adultme <- adultme[,1:29]
+adulthi <- adulthi[,1:29]
+
+str(adultlo)
+
+adultlo$timebin[adultlo$month <1200] <- "50-100"
+adultlo$timebin[adultlo$month >1199 & adultlo$month <2400] <- "100-200"
+adultlo$timebin[adultlo$month >2399 & adultlo$month <3600] <- "200-300"
+adultlo$timebin[adultlo$month >3599 & adultlo$month <4800] <- "300-400"
+adultlo$timebin[adultlo$month >4799 & adultlo$month <6000] <- "400-500"
+
+adultme$timebin[adultme$month <1200] <- "50-100"
+adultme$timebin[adultme$month >1199 & adultme$month <2400] <- "100-200"
+adultme$timebin[adultme$month >2399 & adultme$month <3600] <- "200-300"
+adultme$timebin[adultme$month >3599 & adultme$month <4800] <- "300-400"
+adultme$timebin[adultme$month >4799 & adultme$month <6000] <- "400-500"
+
+adulthi$timebin[adulthi$month <1200] <- "50-100"
+adulthi$timebin[adulthi$month >1199 & adulthi$month <2400] <- "100-200"
+adulthi$timebin[adulthi$month >2399 & adulthi$month <3600] <- "200-300"
+adulthi$timebin[adulthi$month >3599 & adulthi$month <4800] <- "300-400"
+adulthi$timebin[adulthi$month >4799 & adulthi$month <6000] <- "400-500"
+
+adultlosumm <- ddply(.data=adultlo, .(timebin),
+                     summarize,
+                     avgpopsize = mean(popSize),
+                     avgmeanage = mean(averageAge),
+                     avgdensity = mean(density),
+                     avgL = mean(averageLength),
+                     avgW = mean(averageWeight))
+
+adultlosumm <- cbind(adultlosumm, intro=rep("lo",5))
+
+adultmesumm <- ddply(.data=adultme, .(timebin),
+                     summarize,
+                     avgpopsize = mean(popSize),
+                     avgmeanage = mean(averageAge),
+                     avgdensity = mean(density),
+                     avgL = mean(averageLength),
+                     avgW = mean(averageWeight))
+
+adultmesumm <- cbind(adultmesumm, intro=rep("me",5))
+
+adulthisumm <- ddply(.data=adulthi, .(timebin),
+                     summarize,
+                     avgpopsize = mean(popSize),
+                     avgmeanage = mean(averageAge),
+                     avgdensity = mean(density),
+                     avgL = mean(averageLength),
+                     avgW = mean(averageWeight))
+
+adulthisumm <- cbind(adulthisumm, intro=rep("hi",5))
+
+adultsumm <- rbind(adultlosumm, adultmesumm, adulthisumm)
+
+adultlo <- cbind(adultlo, intro=rep("lo", 995))
+adultme <- cbind(adultme, intro=rep("me", 995))
+adulthi <- cbind(adulthi, intro=rep("hi", 995))
+
+adultraw <- rbind(adultlo, adultme, adulthi)
+
+ggplot() + geom_smooth(data=adultraw, aes(month, averageLength, colour=intro)) 
+  #geom_point(data=adultraw, aes(month, averageLength, colour=intro))
+
+ggplot() + geom_smooth(data=adultraw, aes(month, averageWeight, colour=intro)) 
+  #geom_point(data=adultraw, aes(month, averageWeight, colour=intro))
+
+ggplot() + geom_smooth(data=adultraw, aes(month, popSize, colour=intro))
+  #geom_point(data=adultraw, aes(month, popSize, colour=intro))
+
+ggplot() + geom_smooth(data=adultraw, aes(month, density, colour=intro))
+
+ggplot() + geom_smooth(data=adultraw, aes(month, averageAge, colour=intro))
