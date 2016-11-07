@@ -1,0 +1,244 @@
+---
+title: "OMEGA"
+output: html_document
+---
+
+```{r}
+require(ggplot2)
+require(plyr)
+require(lubridate)
+require(dplyr)
+require(sp)
+require(maptools)
+require(ggmap)
+require(ggplot2)
+require(reshape2)
+require(rgdal)
+require(raster)
+require(rgeos)
+require(PBSmapping)
+require(gdistance)
+require(grid)
+require(gridExtra)
+require(scales)
+```
+
+### read in and tidy up
+```{r}
+setwd("C:/Users/keyserf/Documents/Data/")
+broodfitness <- read.csv("./OMEGA results_2016-11-04_Sablefish1_Brood year fitness.csv", header=FALSE)
+progescape <- read.csv("./OMEGA results_2016-11-04_Sablefish1_Prog escapees by bin.csv", header=FALSE)
+runsumm <- read.csv("./OMEGA results_2016-11-04_Sablefish1_Summary.csv", header=FALSE)
+fembiomass <- read.csv("./OMEGA results_2016-11-04_Sablefish1_F Biomass wild and escapee.csv", header=FALSE)
+wildabund <- read.csv("./OMEGA results_2016-11-04_Sablefish1_Abundance_wild.csv", header=FALSE)
+
+runsumm[,1:67] <- apply(runsumm[,1:67], 2, function(x) as.character(x))
+runsumm[,1:67] <- apply(runsumm[,1:67], 2, function(x) gsub(",", "", x))
+cols <- runsumm[,1]
+cols <- gsub(" ", ".", cols)
+
+runsumm <- data.frame(cbind(c(runsumm[1, 2:67]), 
+                      c(runsumm[2, 2:67]),
+                      c(runsumm[3, 2:67]),
+                      c(runsumm[4, 2:67]),
+                      c(runsumm[5, 2:67]),
+                      c(runsumm[6, 2:67]),
+                      c(runsumm[7, 2:67])))
+
+colnames(runsumm) <- cols
+
+runsumm[,1:7] <- apply(runsumm[,1:7], 2, function(x) as.numeric(x))
+
+ggplot() + geom_point(data=runsumm, aes(Age, Productivity.to.end.of.year), shape=1) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Age") + 
+  ylab("Productivity to end of year") +
+  xlim(0,20) 
+
+ggplot() + geom_point(data=runsumm, aes(Age, Fishing.Mortality), shape=2) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  xlab("Age") + 
+  ylab("Fishing mortality") +
+  xlim(0,20) 
+
+par(mar = c(5,5,2,5))
+plot(runsumm$Age, runsumm$Productivity.to.end.of.year, xlim=c(0,20), xlab=NA, ylab=NA, cex=1.2)
+par(new = T)
+plot(runsumm$Age, runsumm$Fishing.Mortality, xlim=c(0,20), pch=16, axes=F, xlab=NA, ylab=NA, cex=1.2)
+axis(side = 4)
+mtext(side = 4, line = 3, 'Fishing mortality')
+mtext(side = 2, line = 3, 'Productivity to end of year')
+mtext(side = 1, line = 3, 'Age')
+legend("bottomright",
+       legend=c("Productivity to end of year", "Fishing mortality"),
+       pch=c(1, 16))
+title("Sablefish example")
+
+
+
+fembiomass <- fembiomass[2:101,]
+colnames(fembiomass) <- c("Year", "Biomass_Fem_Spawn_ALL", 0:65)
+
+fembiomass[,1:68] <- apply(fembiomass[,1:68], 2, function(x) gsub(",", "", x))
+fembiomass[,1] <- gsub("Year ", "", fembiomass[,1])
+fembiomass[,1:68] <- apply(fembiomass[,1:68], 2, function(x) as.numeric(x))
+head(fembiomass)
+
+fembiomass <- melt(fembiomass, id.vars=c("Year", "Biomass_Fem_Spawn_ALL"))
+fembiomass$variable <- as.numeric(as.character(fembiomass$variable))
+
+fembiomass$size[fembiomass$variable <5] <- "1-5"
+fembiomass$size[fembiomass$variable > 4 & fembiomass$variable < 10] <- "5-9"
+fembiomass$size[fembiomass$variable > 9 & fembiomass$variable < 15] <- "10-14"
+fembiomass$size[fembiomass$variable > 14 & fembiomass$variable < 20] <- "15-19"
+fembiomass$size[fembiomass$variable > 19 & fembiomass$variable < 25] <- "20-24"
+fembiomass$size[fembiomass$variable > 24 & fembiomass$variable < 30] <- "25-29"
+fembiomass$size[fembiomass$variable > 29 & fembiomass$variable < 40] <- "30-39"
+fembiomass$size[fembiomass$variable > 39 & fembiomass$variable < 50] <- "40-49"
+fembiomass$size[fembiomass$variable > 49 & fembiomass$variable < 60] <- "50-59"
+fembiomass$size[fembiomass$variable > 59 & fembiomass$variable < 70] <- "60-69"
+
+fembiomass$size <- factor(fembiomass$size, levels=c("1-5", "5-9", "10-14", "15-19", "20-24", "25-29", "30-39", "40-49", "50-59", "60-69"))
+
+ggplot() + geom_point(data=fembiomass[fembiomass$variable>0,], aes(Year, log(value), colour=variable)) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  facet_wrap(~size, nrow=2) +
+  xlab("Year") +
+  ylab("log(Total Abundance)") +
+  scale_colour_continuous(name="Age") +
+  ggtitle("Sablefish example\nTotal Abundance by age bin")
+
+ggplot() + geom_point(data=fembiomass, aes(Year, Biomass_Fem_Spawn_W)) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  ylab("Total Female Spawner Biomass (mt)") +
+  ggtitle("Sablefish example")
+
+
+wildabund <- wildabund[3:102,1:68]
+colnames(wildabund) <- c("Year", "Biomass_Fem_Spawn_W", 0:65)
+
+wildabund[,1:68] <- apply(wildabund[,1:68], 2, function(x) gsub(",", "", x))
+wildabund[,1] <- gsub("Year ", "", wildabund[,1])
+wildabund[,1:68] <- apply(wildabund[,1:68], 2, function(x) as.numeric(x))
+head(wildabund)
+
+wildabund <- melt(wildabund, id.vars=c("Year", "Biomass_Fem_Spawn_W"))
+wildabund$variable <- as.numeric(as.character(wildabund$variable))
+
+wildabund$size[wildabund$variable <5] <- "1-5"
+wildabund$size[wildabund$variable > 4 & wildabund$variable < 10] <- "5-9"
+wildabund$size[wildabund$variable > 9 & wildabund$variable < 15] <- "10-14"
+wildabund$size[wildabund$variable > 14 & wildabund$variable < 20] <- "15-19"
+wildabund$size[wildabund$variable > 19 & wildabund$variable < 25] <- "20-24"
+wildabund$size[wildabund$variable > 24 & wildabund$variable < 30] <- "25-29"
+wildabund$size[wildabund$variable > 29 & wildabund$variable < 40] <- "30-39"
+wildabund$size[wildabund$variable > 39 & wildabund$variable < 50] <- "40-49"
+wildabund$size[wildabund$variable > 49 & wildabund$variable < 60] <- "50-59"
+wildabund$size[wildabund$variable > 59 & wildabund$variable < 70] <- "60-69"
+
+wildabund$size <- factor(wildabund$size, levels=c("1-5", "5-9", "10-14", "15-19", "20-24", "25-29", "30-39", "40-49", "50-59", "60-69"))
+
+ggplot() + geom_point(data=wildabund[wildabund$variable>0,], aes(Year, log(value), colour=variable)) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  facet_wrap(~size, nrow=2) +
+  xlab("Year") +
+  ylab("log(Wild Abundance)") +
+  scale_colour_continuous(name="Age") +
+  ggtitle("Sablefish example\nWild Abundance by age bin")
+
+ggplot() + geom_point(data=wildabund, aes(Year, Biomass_Fem_Spawn_W)) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  ylab("Wild Female Spawner Biomass (mt)") +
+  ggtitle("Sablefish example")
+
+
+names(wildabund) <- c("Year", "Wild_spawn_biomass", "Age", "Wild_abund", "Size")
+names(fembiomass) <- c("Year", "Total_spawn_biomass", "Age", "Total_abund", "Size")
+
+abund <- join(wildabund, fembiomass, type="left")
+
+abund$Escape_spawn_biomass <- abund$Total_spawn_biomass - abund$Wild_spawn_biomass
+abund$Escape_abund <- abund$Total_abund - abund$Wild_abund
+
+biomass <- melt(abund[,c(1:3, 6)], id.vars=c("Year", "Age"))
+
+abund2 <- melt(abund[,c(1,3, 4, 7, 9)], id.vars=c("Year", "Age"))
+
+levels(biomass$variable) <- c("Wild", "Total") 
+
+ggplot() + geom_point(data=biomass, aes(Year, value, shape=variable)) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  scale_shape_manual(values=c(1,16), name=NULL) +
+  ylab("Female Spawner biomass (mt)") +
+  ggtitle("Sablefish example")
+
+ggplot() + geom_point(data=abund2[abund2$variable %in% c("Escape_abund"),], aes(Year, value)) +
+  theme_classic() +
+  theme(panel.background=element_rect(colour="black")) +
+  ylab("Escapee abundance (mt)\n") + 
+  xlab("\nYear") +
+  scale_y_continuous(labels = comma) +
+  ggtitle("Sablefish example")
+  
+
+
+cols <- progescape[1,]
+progescape <- progescape[2:101,]
+colnames(progescape) <- c("Year", "Inventory", "Escapees", "Weight_bin.015", "Weight_bin.2", "Weight_bin.4", "Weight_bin.6", "Weight_bin.8", "Weight_bin1.")
+
+progescape[,1:9] <- apply(progescape[,1:9], 2, function(x) gsub(",", "", x))
+progescape[,1] <- gsub("Year ", "", progescape[,1])
+progescape[,1:9] <- apply(progescape[,1:9], 2, function(x) as.numeric(x))
+head(progescape)
+
+progescape <- melt(progescape, id.vars=c("Year", "Inventory", "Escapees"))
+
+ggplot() + geom_point(data=progescape[progescape$variable == "Weight_bin1.",], aes(Year, Escapees)) +
+  theme_classic() + 
+  theme(panel.background=element_rect(colour="black")) +
+  scale_y_continuous(labels=comma) +
+  ylab("Number of escapees\n") +
+  xlab("\nYear") +
+  ggtitle("Sablefish example")
+
+
+
+cols <- broodfitness[1,]
+broodfitness <- broodfitness[2:101,]
+colnames(broodfitness) <- c("Year", "LifeCycle", "NaturalTraitValue", "EscapeeTraitValue", "pHOS")
+
+broodfitness[,1] <- gsub("Year ", "", broodfitness[,1])
+broodfitness[,1:5] <- apply(broodfitness[,1:5], 2, function(x) as.numeric(x))
+head(broodfitness)
+
+ggplot() + geom_point(data=broodfitness, aes(Year, LifeCycle)) +
+  theme_classic() + 
+  theme(panel.background = element_rect(colour="black"))
+
+broodfitness <- melt(broodfitness, id.vars=c("Year", "LifeCycle", "pHOS"))
+
+ggplot() + geom_point(data=broodfitness, aes(Year, value, shape=variable)) +
+  theme_classic() + 
+  theme(panel.background = element_rect(colour="black")) +
+  scale_shape_manual(values=c(1,16), name=NULL, labels=c("Natural", "Escapee")) +
+  ylim(70,100) +
+  ylab("Trait Value\n") +
+  xlab("\nYear") +
+  ggtitle("Sablefish example\nBrood year fitness")
+
+
+ggplot() + geom_point(data=broodfitness[broodfitness$variable=="NaturalTraitValue",], aes(Year, pHOS)) +
+  theme_classic() + 
+  theme(panel.background = element_rect(colour="black")) +
+  ylab("Percentage of hatchery-origin spawners\n") +
+  xlab("\nYear") +
+  ggtitle("Sablefish example\nBrood year fitness") +
+  scale_y_continuous(label=percent)
+
