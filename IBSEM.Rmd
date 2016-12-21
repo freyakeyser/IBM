@@ -120,12 +120,12 @@ meas.vec <- as.vector(meas)
 df <- data.frame(cbind(df, meas.vec))
 names(df) <- c("lon", "lat", "dayssince", "temp")
 
-test <- ddply(.data=df, .(lon, lat),
+temps <- ddply(.data=df, .(lon, lat),
               summarize,
               mnmean=mean(temp, na.rm=TRUE))
 
-ggplot() + geom_point(data=test, aes(lon, lat, colour=mnmean)) +
-  geom_rect(data=test, aes(xmin=290, xmax=310, ymin=45, ymax=60), fill=NA, colour="white")
+ggplot() + geom_point(data=temps, aes(lon, lat, colour=mnmean)) +
+  geom_rect(data=temps, aes(xmin=290, xmax=310, ymin=45, ymax=60), fill=NA, colour="white")
 
 df_atl <- subset(df, lon >290 & lon <310 & lat>45 & lat < 55 & is.na(temp)==FALSE)
 
@@ -135,11 +135,18 @@ df_atl$month <- month(df_atl$date)
 df_atl$year <- year(df_atl$date)
 df_atl <- subset(df_atl, year > 1985)
 
+sd(df_atl$temp)
+
 mnmean <- ddply(.data=df_atl, .(month),
                 summarize,
-                mntemp = mean(temp))
+                mntemp = mean(temp),
+                sdtemp = sd(temp))
+
+mean(mnmean$sdtemp)
 
 ggplot() + geom_point(data=mnmean, aes(month, mntemp)) + theme_bw()
+
+
 
 ### mnmean contains monthly 30-year averaged sea temperatures.
 
@@ -152,17 +159,17 @@ ggplot() + geom_point(data=mnmean, aes(month, mntemp)) + theme_bw()
 ### read in table
 ```{r}
 ## only some of the data
-ian <- read.table("C:/Users/keyserf/Documents/Data/All Biochar NET and RR Oct 2013.txt", header=TRUE)
+ian <- read.table("C:/Users/keyserf/Documents/Data/Modelling/All Biochar NET and RR Oct 2013.txt", header=TRUE)
 names(ian)
 
 ian[,1:20] <- apply(ian[,1:20], 2, function(x) as.numeric(as.character(x)))
 
 
 ## sites
-sites <- read.csv("C:/Users/keyserf/Documents/Data/sites_lat_long_brendan.csv")
+sites <- read.csv("C:/Users/keyserf/Documents/Data/Rivers/sites_lat_long_brendan.csv")
 
 ## all the data
-salmon <- read.csv("C:/Users/keyserf/Documents/Data/All Biochar Oct 2013.csv", header=TRUE)
+salmon <- read.csv("C:/Users/keyserf/Documents/Data/Modelling/All Biochar Oct 2013.csv", header=TRUE)
 names(salmon)
 
 str(salmon)
@@ -177,7 +184,17 @@ salmon[,5:28] <- apply(salmon[,5:28], 2, function(x) as.numeric(as.character(x))
 ggplot() + geom_histogram(data=salmon, aes(MO), colour="black", fill="white") + scale_x_continuous(breaks=seq(0, 13,1)) + theme_bw() 
 
 ## format dates
+# If day missing, assign 15th.
+salmon$DY[is.na(salmon$DY)==TRUE] <- 15
+# If month missing, remove.
+salmon <- subset(salmon, is.na(MO)==FALSE)
+
 salmon$DATE <- ymd(paste0(salmon$year.adj,"-", salmon$MO,"-", salmon$DY))
+
+# Mistakes for June 31 and November 31. Changing to June 30 and November 30.
+salmon$DY <- ifelse(is.na(salmon$DATE)==TRUE, 30, salmon$DY)
+salmon$DATE <- ymd(paste0(salmon$year.adj,"-", salmon$MO,"-", salmon$DY))
+
 salmon$dayssince <- salmon$DATE - ymd("1954-01-01")
 salmon$doy <- salmon$DATE - ymd(paste0(salmon$year.adj, "-", 1, "-", 1))
 
@@ -292,13 +309,75 @@ smolts$scaledFL <- base::scale(smolts$FL)
 
 ### plot smolt lengths against year and by nyears in river 
 ```{r}
-plot1 <- ggplot() + 
-  geom_point(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, scaledFL), size=0.5) + 
+plotCNR <- ggplot() + 
+  geom_point(data=smolts[smolts$season=="spring" & smolts$AREA==361335,], aes(year.adj, scaledFL), size=0.5) + 
   facet_grid(RA~.) +
   theme_bw() +
-  geom_smooth(data=smolts[smolts$season=="spring" & is.na(smolts$season)==FALSE,], aes(year.adj, scaledFL), method="lm") + 
+  geom_smooth(data=smolts[smolts$season=="spring" & smolts$AREA==361335,], aes(year.adj, scaledFL), method="lm") + 
   ylab("Scaled fork length") +
-  xlab("Year")
+  xlab("Year") +
+  ggtitle("Conne River spring smolts")
+  
+
+model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj,na.action = na.exclude)
+summary(model1)
+
+model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj)
+summary(model2)
+
+model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj)
+summary(model3)
+
+model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj)
+summary(model4)
+
+vals <- data.frame(year.adj=rep(1985,4), scaledFL=rep(7, 4), RA=c(2,3,4,5),
+                   slope = c(coefficients(model1)[2],coefficients(model2)[2],coefficients(model3)[2],coefficients(model4)[2]),
+                   rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared, summary(model4)$adj.r.squared),
+                   pval = c(anova(model1)[1,5], anova(model2)[1,5], anova(model3)[1,5], anova(model4)[1,5]))
+
+plotCNR + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4), "   p-value = ", round(pval,4))), size=3, hjust=0) + ylim(-3, 8)
+
+
+
+plotLTR<- ggplot() + 
+  geom_point(data=smolts[smolts$season=="spring" & smolts$AREA==361311 & smolts$RA>1,], aes(year.adj, scaledFL), size=0.5) + 
+  facet_grid(RA~.) +
+  theme_bw() +
+  geom_smooth(data=smolts[smolts$season=="spring" & smolts$AREA==361311 & smolts$RA>1,], aes(year.adj, scaledFL), method="lm") + 
+  ylab("Scaled fork length") +
+  xlab("Year") +
+  ggtitle("Little River spring smolts")
+  
+
+model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring" & smolts$AREA==361311),], scaledFL~year.adj,na.action = na.exclude)
+summary(model1)
+
+model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring" & smolts$AREA==361311),], scaledFL~year.adj)
+summary(model2)
+
+model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring" & smolts$AREA==361311),], scaledFL~year.adj)
+summary(model3)
+
+
+vals <- data.frame(year.adj=rep(1993,3), scaledFL=rep(4.5, 3), RA=c(2,3,4),
+                   slope = c(coefficients(model1)[2],coefficients(model2)[2],coefficients(model3)[2]),
+                   rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared),
+                   pval = c(anova(model1)[1,5], anova(model2)[1,5], anova(model3)[1,5]))
+
+plotLTR + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4), "   p-value = ", round(pval,4))), size=3, hjust=0) + ylim(-2, 5)
+
+
+
+plotboth<- ggplot() + 
+  geom_point(data=smolts[smolts$season=="spring" & smolts$RA>1,], aes(year.adj, scaledFL), size=0.5) + 
+  facet_grid(RA~.) +
+  theme_bw() +
+  geom_smooth(data=smolts[smolts$season=="spring"  & smolts$RA>1,], aes(year.adj, scaledFL), method="lm") + 
+  ylab("Scaled fork length") +
+  xlab("Year") +
+  ggtitle("Conne and Little River spring smolts")
+  
 
 model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring"),], scaledFL~year.adj,na.action = na.exclude)
 summary(model1)
@@ -309,14 +388,233 @@ summary(model2)
 model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring"),], scaledFL~year.adj)
 summary(model3)
 
-model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring"),], scaledFL~year.adj)
+
+vals <- data.frame(year.adj=rep(1985,4), scaledFL=rep(7, 4), RA=c(2,3,4,5),
+                   slope = c(coefficients(model1)[2],coefficients(model2)[2],coefficients(model3)[2],coefficients(model4)[2]),
+                   rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared, summary(model4)$adj.r.squared),
+                   pval = c(anova(model1)[1,5], anova(model2)[1,5], anova(model3)[1,5], anova(model4)[1,5]))
+
+plotboth + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4), "   p-value = ", round(pval,4))), size=3, hjust=0) + ylim(-3, 8)
+```
+
+
+### smolt run timing
+```{r}
+
+runtime<- ddply(.data=smolts[smolts$season=="spring",], .(AREA, year.adj, doy),
+                summarize,
+                count = length(unique(Obs)))
+
+runtotal <-  ddply(.data=smolts[smolts$season=="spring",], .(AREA, year.adj),
+                summarize,
+                count = length(unique(Obs)),
+                mid = length(unique(Obs))/2)
+
+## determine run mid-point date (when 50% of fish have passed)
+
+runcumsum <- ddply(.data=runtime, .(AREA, year.adj),
+                transform,
+                cumcount = cumsum(count))
+
+
+runcumsum <- join(runcumsum, runtotal[,c(1,2,4)], type="left")
+
+runcumsum$midtest <- ifelse(runcumsum$cumcount > runcumsum$mid | runcumsum$cumcount == runcumsum$mid, "y", "n")
+
+runmid2 <- ddply(.data=runcumsum[runcumsum$midtest=="y",], .(AREA, year.adj, mid, midtest),
+                 summarize, 
+                 middate = min(doy))
+
+runrange <- ddply(.data=runtime, .(AREA, year.adj),
+                  summarize,
+                  start=as.numeric(min(doy)),
+                  end=as.numeric(max(doy)))
+
+runmid2 <- join(runmid2, runrange, type="left")
+
+
+plotCNRrun <- ggplot() + 
+  geom_point(data=runcumsum[runcumsum$AREA==361335,], aes(doy, cumcount), size=0.5) + 
+  geom_line(data=runmid2[runmid2$AREA==361335,], aes(middate, mid), size=0.5, colour="red") +
+  #facet_grid(year.adj~.) +
+  theme_bw() +
+  #geom_smooth(data=runtime[runtime$AREA==361335,], aes(doy, count), method="lm") + 
+  ylab("Count") +
+  xlab("Day of year") +
+  ggtitle("Conne River spring smolts")
+  
+
+plotCNRrun <- ggplot() + 
+  geom_point(data=runtime[runtime$AREA==361335,], aes(year.adj, doy), size=0.5) + 
+  #geom_line(data=runmid2[runmid2$AREA==361335,], aes(year.adj, middate), size=0.5, colour="red") +
+  geom_smooth(data=runmid2[runmid2$AREA==361335,], aes(year.adj, middate), size=0.5, method="lm") +
+  #facet_grid(year.adj~.) +
+  theme_bw() +
+  ylab("Count") +
+  xlab("Day of year") +
+  ggtitle("Conne River spring smolts")
+
+ggplot() + 
+  #geom_point(data=runtotal[runtotal$AREA==361335,], aes(year.adj, count), size=0.5) + 
+  geom_point(data=runmid2[runmid2$AREA==361335,], aes(year.adj, middate), size=2) +
+  geom_segment(data=runmid2[runmid2$AREA==361335,], aes(x=year.adj, xend=year.adj, y=start, yend=end), size=0.5) +
+  geom_smooth(data=runmid2[runmid2$AREA==361335,], aes(year.adj, middate), size=0.5, method="lm") +
+  #facet_grid(year.adj~.) +
+  theme_bw() +
+  ylab("Date of run mid-point\n(and run duration)") +
+  xlab("Year") +
+  ggtitle("Conne River spring smolts")
+
+runmid2$total <- runmid2$mid*2
+
+
+model_run1 <- lm(data=runmid2[runmid2$AREA==361335,], as.numeric(middate) ~ as.numeric(year.adj) + as.numeric(total))
+summary(model_run1)
+
+plot(model_run1)
+
+
+## is temperature involved?
+CNRtemps <- read.csv("C:/Users/keyserf/Documents/Data/temperatures/02ZE004_CNR.csv")
+
+names(CNRtemps) <- c("STAT", "WSC", "Date", "Temp")
+
+CNRtemps$Date <- mdy_hm(CNRtemps$Date)
+CNRtemps$year.adj <- year(CNRtemps$Date)
+CNRtemps$doy <- yday(CNRtemps$Date)
+CNRtemps$month <- month(CNRtemps$Date)
+
+temp_summ <- ddply(.data=CNRtemps, .(year.adj, month, doy), 
+                   summarize,
+                   meanwatertemp = mean(Temp))
+
+temp_month <- ddply(.data=CNRtemps, .(year.adj, month), 
+                   summarize,
+                   meanwatertemp = mean(Temp))
+
+names(temp_summ) <- c("year.adj", "middate", "meanwatertemp")
+
+str(temp_summ)
+
+runmid2$middate <- as.numeric(runmid2$middate)
+
+runmid2 <- join(runmid2, temp_month, type="left")
+
+
+ggplot() + 
+  #geom_point(data=runtotal[runtotal$AREA==361335,], aes(year.adj, count), size=0.5) + 
+  geom_point(data=runmid2[runmid2$AREA==361335,], aes(year.adj, middate), size=2) +
+  geom_segment(data=runmid2[runmid2$AREA==361335,], aes(x=year.adj, xend=year.adj, y=start, yend=end), size=0.5) +
+  #geom_smooth(data=runmid2[runmid2$AREA==361335,], aes(year.adj, middate), size=0.5, method="lm") +
+  #facet_grid(year.adj~.) +
+  theme_bw() +
+  ylab("Date of run mid-point\n(and run duration)") +
+  xlab("Year") +
+  ggtitle("Conne River spring smolts") +
+  theme_classic() + 
+  theme(panel.background = element_blank(), panel.border=element_rect(colour="black", fill=NA)) 
+
+
+### mean monthly water temp vs. mid-run date
+
+
+install.packages('rclimateca')
+require(rclimateca)
+getClimateSites("st. albans NL", year=1970:2016)
+## 8413 Baie D'espoir General Station 6567 lat=47.98 long=-55.80, 1967-2016
+
+BDESP <- getClimateData(6567, timeframe="daily", year=1967:2016)
+## air temps for Baie D'espoir ^^
+
+BDESP <- BDESP[,c(2,3,4,5,6,11)]
+names(BDESP) <- c("datetime", "year", "month", "day", "qual", "meantemp")
+
+BDESP$datetime <- ymd(BDESP$datetime)
+BDESP$middate <- yday(BDESP$datetime)
+BDESP$year.adj <- year(BDESP$datetime)
+
+BDESPmonth <- ddply(.data=BDESP, .(year, month), 
+                    summarize,
+                    meanmonth = mean(meantemp, na.rm=TRUE))
+
+BDESP <- join(BDESP, BDESPmonth, type="left")
+
+
+runmid2 <- join(runmid2[runmid2$AREA==361335,], BDESP[is.na(BDESP$meanmonth)==FALSE,], type="left")
+
+
+unique(runmid2$year.adj)
+model_run2 <- lm(data=runmid2[is.na(runmid2$meanmonth)==FALSE,], middate ~ meanmonth*year.adj)
+summary(model_run2)
+
+
+require(MuMIn)
+
+options(na.action = "na.fail")
+
+dredge2 <- dredge(model_run2)
+subset(dredge2, delta < 4)
+
+## best model is middate ~ year + mean monthly air temp in may
+
+
+model_best <- lm(data=runmid2[is.na(runmid2$meanmonth)==FALSE,], middate ~ meanmonth + year.adj)
+
+preds <- predict(model_best, runmid2[is.na(runmid2$meanmonth)==FALSE,])
+
+runmid2 <- cbind(runmid2[is.na(runmid2$meanmonth)==FALSE,], preds)
+
+ggplot() + 
+  #geom_point(data=runtotal[runtotal$AREA==361335,], aes(year.adj, count), size=0.5) + 
+  geom_point(data=runmid2[runmid2$AREA==361335,], aes(meanmonth, middate), size=2) +
+  geom_segment(data=runmid2[runmid2$AREA==361335,], aes(x=meanmonth, xend=meanmonth, y=start, yend=end), size=0.5) +
+  geom_line(data=runmid2[runmid2$AREA==361335,], aes(meanmonth, preds), colour="red") +
+  #facet_grid(year.adj~.) +
+  theme_bw() +
+  ylab("Date of run mid-point\n(and run duration)") +
+  xlab("Mean temperature in May") +
+  ggtitle("Conne River spring smolts")
+
+
+install.packages("visreg")
+require(visreg)
+par(mfrow=c(1,2), mar=c(4,4,4,1.5), oma = c(0, 0, 1, 0))
+visreg(model_best, "meanmonth", ylab="Date of run mid-point", xlab="Mean air temperature in May")
+visreg(model_best, "year.adj", ylab="Date of run mid-point", xlab="Year")
+title("lm: mid-point ~ May mean air temp + year", outer=TRUE)
+dev.off()
+
+plotLTRrun <- ggplot() + 
+  geom_point(data=runcumsum[runcumsum$AREA==361311,], aes(doy, cumcount), size=0.5) + 
+  geom_line(data=runmid2[runmid2$AREA==361311,], aes(middate, mid), size=0.5, colour="red") +
+  #facet_grid(year.adj~.) +
+  theme_bw() +
+  #geom_smooth(data=runtime[runtime$AREA==361335,], aes(doy, count), method="lm") + 
+  ylab("Count") +
+  xlab("Day of year") +
+  ggtitle("Little River spring smolts")
+
+
+model1 <- lm(data=smolts[which(smolts$RA==2 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj,na.action = na.exclude)
+summary(model1)
+
+model2 <- lm(data=smolts[which(smolts$RA==3 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj)
+summary(model2)
+
+model3 <- lm(data=smolts[which(smolts$RA==4 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj)
+summary(model3)
+
+model4 <- lm(data=smolts[which(smolts$RA==5 & smolts$season=="spring" & smolts$AREA==361335),], scaledFL~year.adj)
 summary(model4)
 
 vals <- data.frame(year.adj=rep(1985,4), scaledFL=rep(7, 4), RA=c(2,3,4,5),
                    slope = c(coefficients(model1)[2],coefficients(model2)[2],coefficients(model3)[2],coefficients(model4)[2]),
-                   rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared, summary(model4)$adj.r.squared))
+                   rsq = c(summary(model1)$adj.r.squared, summary(model2)$adj.r.squared, summary(model3)$adj.r.squared, summary(model4)$adj.r.squared),
+                   pval = c(anova(model1)[1,5], anova(model2)[1,5], anova(model3)[1,5], anova(model4)[1,5]))
 
-plot1 + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4))), size=3, hjust=0) + ylim(-3, 8)
+plotCNR + geom_text(data=vals, aes(year.adj, scaledFL, label=paste0("slope = ", round(slope,4), "   adj. Rsq. = ", round(rsq,4), "   p-value = ", round(pval,4))), size=3, hjust=0) + ylim(-3, 8)
+
+
 
 ##############################
 ```
@@ -345,12 +643,12 @@ summary(model2)
 # exp(-2.4299) = 0.08804564 survival per year males = 8.8% survival?
 # exp(-2.22645) = 0.1079108 survival per year females =10.7% survival?
 
-mortF4 <- log(3583) - log(687)
-mortF5 <- log(687) - log(66)
-mortF6 <- log(66) - log(8)
-mortM4 <- log(1216) - log(258)
-mortM5 <- log(258) - log(18)
-mortM6 <- log(18) - log(2)
+mortF4 <- log(agestr[agestr$sex.adj=="F" & agestr$TA==4,]$total) - log(agestr[agestr$sex.adj=="F" & agestr$TA==5,]$total)
+mortF5 <- log(agestr[agestr$sex.adj=="F" & agestr$TA==5,]$total) - log(agestr[agestr$sex.adj=="F" & agestr$TA==6,]$total)
+mortF6 <- log(agestr[agestr$sex.adj=="F" & agestr$TA==6,]$total) - log(agestr[agestr$sex.adj=="F" & agestr$TA==7,]$total)
+mortM4 <- log(agestr[agestr$sex.adj=="M" & agestr$TA==4,]$total) - log(agestr[agestr$sex.adj=="M" & agestr$TA==5,]$total)
+mortM5 <- log(agestr[agestr$sex.adj=="M" & agestr$TA==5,]$total) - log(agestr[agestr$sex.adj=="M" & agestr$TA==6,]$total)
+mortM6 <- log(agestr[agestr$sex.adj=="M" & agestr$TA==6,]$total) - log(agestr[agestr$sex.adj=="M" & agestr$TA==7,]$total)
 
 rates <- data.frame(rate=rbind(mortF4, mortF5, mortF6, mortM4, mortM5, mortM6))
 rates <- data.frame(cbind(round(rates,3), sex=c(rep("F",3), rep("M", 3)), age=c(4,5,6,4,5,6)))
@@ -367,7 +665,7 @@ rates
 # 2.197   M   6 0.111
 
 
-### ok but this is not age-specific mortality. Papers recommend using dry weight to predict age-specific mortality, so need to calculate dry weight from length or from wet weight. For NL parr: log10(dryweight) = -2.43 + 2.76*log10(Length) OR log10(dryweight) = -2.43 + 2.76*(1.76 + log10(wetweight))/2.78
+### ok but should i use weight-specific mortality instead? Papers recommend using dry weight to predict age-specific mortality, so need to calculate dry weight from length or from wet weight. For NL parr: log10(dryweight) = -2.43 + 2.76*log10(Length) OR log10(dryweight) = -2.43 + 2.76*(1.76 + log10(wetweight))/2.78
 parr <- subset(salmon_clean, LS==1)
 parr$DW1 <- exp(-2.43 + 2.76*log10(parr$FL/10))
 
